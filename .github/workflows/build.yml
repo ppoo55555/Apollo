@@ -41,6 +41,35 @@ jobs:
           rm -rf KernelSU drivers/kernelsu
           git clone --depth 1 --branch legacy-susfs-v2 https://github.com/sidex15/KernelSU-Next.git KernelSU
           ln -sf ../KernelSU/kernel drivers/kernelsu
+
+          echo "Fixing Linux 4.9 compatibility in KernelSU-Next..."
+          python3 -c "
+          import os
+          # 1. Alias strscpy_pad to __strscpy_pad across KernelSU source files
+          for root, dirs, files in os.walk('KernelSU/kernel'):
+              for f in files:
+                  if f.endswith(('.c', '.h')) and f != 'kernel_compat.h':
+                      p = os.path.join(root, f)
+                      with open(p, 'r') as fp:
+                          content = fp.read()
+                      if 'strscpy_pad' in content:
+                          content = content.replace('strscpy_pad', '__strscpy_pad')
+                          with open(p, 'w') as fp:
+                              fp.write(content)
+                          print(f'Patched strscpy_pad in {f}')
+
+          # 2. Add macro polyfill in kernel_compat.h for kernels < 4.14
+          with open('KernelSU/kernel/compat/kernel_compat.h', 'r') as f:
+              c = f.read()
+          target = '#endif\n}\n\n#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)'
+          patch = '#endif\n}\n\n#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 222)\n#define strscpy_pad __strscpy_pad\n#endif\n\n#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)'
+          if target in c:
+              c = c.replace(target, patch)
+              with open('KernelSU/kernel/compat/kernel_compat.h', 'w') as f:
+                  f.write(c)
+              print('Patched kernel_compat.h')
+          "
+
           echo "KernelSU-Next legacy setup complete:"
           git -C KernelSU log -1 --oneline
 
@@ -82,6 +111,11 @@ jobs:
             printf "%s\n3\n2\ny\nn\nn\ny\n" "$TARGET_NUM" | bash apollo.sh
           else
             printf "%s\n3\n2\ny\nn\nn\n" "$TARGET_NUM" | bash apollo.sh
+          fi
+
+          if ! ls Apollo/Product/*.img 1> /dev/null 2>&1 && ! ls Apollo/Out/*.img 1> /dev/null 2>&1; then
+            echo "ERROR: Kernel compilation failed! No .img file produced!"
+            exit 1
           fi
 
       - name: Package Artifacts
