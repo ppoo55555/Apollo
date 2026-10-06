@@ -1,0 +1,110 @@
+name: Build Apollo Kernel with Latest KernelSU-Next
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Build Target'
+        required: true
+        default: 'G960N (Galaxy S9 Kor)'
+        type: choice
+        options:
+          - 'G960N (Galaxy S9 Kor)'
+          - 'G960F (Galaxy S9 Intl)'
+          - 'ALL (All S9 / S9+ / Note9)'
+      ksu_branch:
+        description: 'KernelSU-Next Branch / Tag'
+        required: true
+        default: 'legacy'
+        type: string
+      kernel_version_suffix:
+        description: 'Kernel Version Suffix (replaces -ksu to hide from detection)'
+        required: true
+        default: '-rel'
+        type: string
+
+jobs:
+  build:
+    name: Build Kernel
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zstd git gnupg flex bison build-essential zip curl \
+            zlib1g-dev libc6-dev-i386 libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils \
+            xsltproc unzip fontconfig python-dev-is-python3 bsdiff bc libssl-dev ccache
+
+      - name: Update KernelSU-Next to Latest Legacy
+        run: |
+          echo "Updating KernelSU submodule to ${{ github.event.inputs.ksu_branch }}..."
+          cd KernelSU
+          git remote set-url origin https://github.com/KernelSU-Next/KernelSU-Next.git
+          git fetch origin ${{ github.event.inputs.ksu_branch }} --depth 1
+          git checkout FETCH_HEAD
+          cd ..
+          rm -rf drivers/kernelsu
+          ln -sf ../KernelSU/kernel drivers/kernelsu
+          echo "KernelSU-Next updated to:"
+          git -C KernelSU log -1 --oneline
+
+      - name: Apply Anti-Detection Stealth Patches
+        run: |
+          SUFFIX="${{ github.event.inputs.kernel_version_suffix }}"
+          echo "Setting kernel version suffix to: $SUFFIX"
+          # Replace -ksu with custom suffix (e.g. -rel) in apollo.sh
+          sed -i "s/CR_IMAGE_NAME=\$CR_IMAGE_NAME-ksu/CR_IMAGE_NAME=\$CR_IMAGE_NAME$SUFFIX/g" apollo.sh
+          sed -i "s/zver=\$zver-KernelSU/zver=\$zver$SUFFIX/g" apollo.sh
+          sed -i 's/"-ksu"/"'"$SUFFIX"'"/g' apollo.sh || true
+
+      - name: Setup Toolchain (Clang 18)
+        run: |
+          mkdir -p toolchain/clang-r522817
+          echo "Downloading Google Clang r522817..."
+          curl -sL https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/llvm-r522817/clang-r522817.tar.gz | tar -xz -C toolchain/clang-r522817
+          touch buildtools
+
+      - name: Compile Apollo Kernel
+        run: |
+          CHOICE="${{ github.event.inputs.target }}"
+          TARGET_NUM=4 # default G960N
+          MKZIP=n
+          if [[ "$CHOICE" == *"G960N"* ]]; then
+            TARGET_NUM=4
+            MKZIP=n
+          elif [[ "$CHOICE" == *"G960F"* ]]; then
+            TARGET_NUM=1
+            MKZIP=n
+          elif [[ "$CHOICE" == *"ALL"* ]]; then
+            TARGET_NUM=8
+            MKZIP=y
+          fi
+
+          echo "Compiling with Target $TARGET_NUM..."
+          # Target (1-8), Compiler (3=clang18), Selinux (2=enforcing), KSU (y), Clean (n), Zip (y/n)
+          printf "%s\n3\n2\ny\nn\n%s\n" "$TARGET_NUM" "$MKZIP" | bash apollo.sh
+
+      - name: Package Artifacts
+        run: |
+          mkdir -p out_artifacts
+          if [ -d Apollo/Product ]; then
+            cp -v Apollo/Product/*.img out_artifacts/ || true
+          fi
+          if [ -d Apollo/Out ]; then
+            cp -v Apollo/Out/*.img out_artifacts/ || true
+            cp -v Apollo/Out/*.zip out_artifacts/ || true
+          fi
+          echo "Artifacts list:"
+          ls -lh out_artifacts/
+
+      - name: Upload Kernel Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Apollo-KernelSU-Next-Build
+          path: out_artifacts/*
