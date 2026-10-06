@@ -2754,12 +2754,31 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 		ret = decon_set_vsync_int(info, active);
 		break;
 
+#ifndef S3CFB_WIN_CONFIG_ONEUI
+#define S3CFB_WIN_CONFIG_ONEUI		0x45a046d1
+#endif
+#ifndef S3CFB_WIN_CONFIG_ONEUI_OLD
+#define S3CFB_WIN_CONFIG_ONEUI_OLD	0x458046d1
+#endif
+#ifndef S3CFB_WIN_CONFIG_AOSP
+#define S3CFB_WIN_CONFIG_AOSP		0x464846d1
+#endif
+#ifndef S3CFB_WIN_CONFIG_AOSP_OLD
+#define S3CFB_WIN_CONFIG_AOSP_OLD	0x458046d1
+#endif
+
+	case S3CFB_WIN_CONFIG_AOSP_OLD:
+	case S3CFB_WIN_CONFIG_ONEUI_OLD:
 	case S3CFB_WIN_CONFIG_OLD:
 		memset(&win_data, 0, sizeof(struct decon_win_config_data));
-	case S3CFB_WIN_CONFIG:
+	case S3CFB_WIN_CONFIG_ONEUI:
+	case S3CFB_WIN_CONFIG_AOSP:
+	case S3CFB_WIN_CONFIG: {
+		size_t copy_sz = min_t(size_t, (size_t)_IOC_SIZE(cmd), sizeof(struct decon_win_config_data));
+
 		DPU_EVENT_LOG(DPU_EVT_WIN_CONFIG, &decon->sd, ktime_set(0, 0));
 		decon_systrace(decon, 'C', "decon_win_config", 1);
-		if (copy_from_user(&win_data, (void __user *)arg, _IOC_SIZE(cmd))) {
+		if (copy_from_user(&win_data, (void __user *)arg, copy_sz)) {
 			decon_err("DECON:ERR:%s:failed to copy win config data\n", __func__);
 			ret = -EFAULT;
 			break;
@@ -2771,7 +2790,7 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 			break;
 		}
 #if defined(CONFIG_DPU_2_0_RELEASE_FENCES)
-		if (copy_to_user((void __user *)arg, &win_data, _IOC_SIZE(cmd))) {
+		if (copy_to_user((void __user *)arg, &win_data, copy_sz)) {
 			ret = -EFAULT;
 			break;
 		}
@@ -2784,6 +2803,7 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 		}
 		break;
 #endif
+	}
 	case S3CFB_GET_HDR_CAPABILITIES:
 		ret = decon_get_hdr_capa(decon, &hdr_capa);
 		if (ret)
