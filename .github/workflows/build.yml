@@ -1,6 +1,9 @@
 name: Build Apollo Kernel with Latest KernelSU-Next
 
 on:
+  push:
+    branches:
+      - Apollo
   workflow_dispatch:
     inputs:
       target:
@@ -92,7 +95,8 @@ else:
 
       - name: Apply Anti-Detection & Suffix Settings
         run: |
-          SUFFIX="${{ github.event.inputs.kernel_version_suffix }}"
+          INPUT_SUFFIX="${{ github.event.inputs.kernel_version_suffix }}"
+          SUFFIX="${INPUT_SUFFIX:-'-rel'}"
           echo "Setting kernel version suffix to: $SUFFIX"
           sed -i "s/CR_IMAGE_NAME=\$CR_IMAGE_NAME-ksu/CR_IMAGE_NAME=\$CR_IMAGE_NAME$SUFFIX/g" apollo.sh
           sed -i "s/zver=\$zver-KernelSU/zver=\$zver$SUFFIX/g" apollo.sh
@@ -106,7 +110,8 @@ else:
 
       - name: Compile Apollo Kernel
         run: |
-          CHOICE="${{ github.event.inputs.target }}"
+          INPUT_CHOICE="${{ github.event.inputs.target }}"
+          CHOICE="${INPUT_CHOICE:-'G960N (Galaxy S9 Kor)'}"
           TARGET_NUM=4 # default G960N
           MKZIP=n
           if [[ "$CHOICE" == *"G960N"* ]]; then
