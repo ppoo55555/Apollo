@@ -132,10 +132,19 @@ int __init security_module_enable(const char *module)
 })
 
 #ifdef CONFIG_KSU
-extern int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
-		     unsigned long arg4, unsigned long arg5);
-extern int ksu_handle_rename(struct dentry *old_dentry, struct dentry *new_dentry);
-extern int ksu_handle_setuid(struct cred *new, const struct cred *old);
+int __attribute__((weak)) ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
+		     unsigned long arg4, unsigned long arg5)
+{
+	return 0;
+}
+int __attribute__((weak)) ksu_handle_rename(struct dentry *old_dentry, struct dentry *new_dentry)
+{
+	return 0;
+}
+int __attribute__((weak)) ksu_handle_setuid(struct cred *new, const struct cred *old)
+{
+	return 0;
+}
 #endif
 
 /* Security operations */
