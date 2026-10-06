@@ -889,6 +889,14 @@ int security_bounded_transition(u32 old_sid, u32 new_sid)
 	if (old_context->type == new_context->type)
 		goto out;
 
+#if defined(CONFIG_KSU)
+	if (new_context->type) {
+		const char *tname = sym_name(&policydb, SYM_TYPES, new_context->type - 1);
+		if (tname && (!strcmp(tname, "ksu") || !strcmp(tname, "su")))
+			goto out;
+	}
+#endif
+
 	index = new_context->type;
 	while (true) {
 		type = flex_array_get_ptr(policydb.type_val_to_struct_array,

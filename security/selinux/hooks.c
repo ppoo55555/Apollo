@@ -2586,7 +2586,7 @@ static int check_nnp_nosuid(const struct linux_binprm *bprm,
 	int rc;
 
 #ifdef CONFIG_KSU
-        static u32 ksu_sid;
+        static u32 ksu_sid, su_sid;
         char *secdata;
         int error;
         u32 seclen;
@@ -2600,13 +2600,16 @@ static int check_nnp_nosuid(const struct linux_binprm *bprm,
 
 #ifdef CONFIG_KSU
 	if (!ksu_sid) {
-            security_secctx_to_secid("u:r:su:s0", strlen("u:r:su:s0"), &ksu_sid);
+            security_secctx_to_secid("u:r:ksu:s0", strlen("u:r:ksu:s0"), &ksu_sid);
+	}
+	if (!su_sid) {
+            security_secctx_to_secid("u:r:su:s0", strlen("u:r:su:s0"), &su_sid);
 	}
 	error = security_secid_to_secctx(old_tsec->sid, &secdata, &seclen);
 	if (!error) {
-            rc = strcmp("u:r:init:s0",secdata);
+            rc = strcmp("u:r:init:s0", secdata);
             security_release_secctx(secdata, seclen);
-            if (rc == 0 && new_tsec->sid == ksu_sid) {
+            if (rc == 0 && ((ksu_sid && new_tsec->sid == ksu_sid) || (su_sid && new_tsec->sid == su_sid))) {
 		return 0;
             }
         }
