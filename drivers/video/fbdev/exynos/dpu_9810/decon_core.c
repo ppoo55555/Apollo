@@ -2754,26 +2754,10 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 		ret = decon_set_vsync_int(info, active);
 		break;
 
-#ifndef S3CFB_WIN_CONFIG_ONEUI
-#define S3CFB_WIN_CONFIG_ONEUI		0x45a046d1
-#endif
-#ifndef S3CFB_WIN_CONFIG_ONEUI_OLD
-#define S3CFB_WIN_CONFIG_ONEUI_OLD	0x458046d1
-#endif
-#ifndef S3CFB_WIN_CONFIG_AOSP
-#define S3CFB_WIN_CONFIG_AOSP		0x464846d1
-#endif
-#ifndef S3CFB_WIN_CONFIG_AOSP_OLD
-#define S3CFB_WIN_CONFIG_AOSP_OLD	0x458046d1
-#endif
-
-	case S3CFB_WIN_CONFIG_AOSP_OLD:
-	case S3CFB_WIN_CONFIG_ONEUI_OLD:
 	case S3CFB_WIN_CONFIG_OLD:
 		memset(&win_data, 0, sizeof(struct decon_win_config_data));
-	case S3CFB_WIN_CONFIG_ONEUI:
-	case S3CFB_WIN_CONFIG_AOSP:
-	case S3CFB_WIN_CONFIG: {
+	case S3CFB_WIN_CONFIG:
+handle_win_config: {
 		size_t copy_sz = min_t(size_t, (size_t)_IOC_SIZE(cmd), sizeof(struct decon_win_config_data));
 
 		DPU_EVENT_LOG(DPU_EVT_WIN_CONFIG, &decon->sd, ktime_set(0, 0));
@@ -3001,6 +2985,8 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 		}
 		break;
 	default:
+		if (_IOC_TYPE(cmd) == 'F' && _IOC_NR(cmd) == 209)
+			goto handle_win_config;
 		decon_err("DECON:ERR:%s:invalid cmd:0x%x(dir:%d, type:%c, nr:%d, sz:%d)\n",
 				__func__, cmd, _IOC_DIR(cmd), (char)_IOC_TYPE(cmd),
 				_IOC_NR(cmd), _IOC_SIZE(cmd));
