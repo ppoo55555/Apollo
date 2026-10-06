@@ -1,7 +1,5 @@
 
-#ifdef CONFIG_KSU
-extern int ksu_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user **arg);
-#endif
+
 /*
  *  linux/kernel/reboot.c
  *
@@ -20,6 +18,10 @@ extern int ksu_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void 
 #include <linux/syscalls.h>
 #include <linux/syscore_ops.h>
 #include <linux/uaccess.h>
+
+#ifdef CONFIG_KSU
+extern int ksu_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user **arg);
+#endif
 
 /*
  * this indicates whether you can reboot with ctrl-alt-del: the default is yes
