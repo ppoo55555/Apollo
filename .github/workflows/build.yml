@@ -42,7 +42,7 @@ jobs:
           git clone --depth 1 --branch legacy-susfs-v2 https://github.com/sidex15/KernelSU-Next.git KernelSU
           ln -sf ../KernelSU/kernel drivers/kernelsu
 
-          echo "Fixing Linux 4.9 compatibility in KernelSU-Next..."
+          echo "Fixing Linux 4.9 compatibility & init.rc hook in KernelSU-Next..."
           python3 -c "
           import os
           # 1. Alias strscpy_pad to __strscpy_pad across KernelSU source files
@@ -68,6 +68,37 @@ jobs:
               with open('KernelSU/kernel/compat/kernel_compat.h', 'w') as f:
                   f.write(c)
               print('Patched kernel_compat.h')
+
+          # 3. Allow pagefault in strncpy_from_user_nofault during execve
+          with open('KernelSU/kernel/compat/kernel_compat.c', 'r') as f:
+              cc = f.read()
+          old_pf = '\tset_fs(USER_DS);\n\tpagefault_disable();\n\tret = strncpy_from_user(dst, unsafe_addr, count);\n\tpagefault_enable();\n\tset_fs(old_fs);'
+          new_pf = '\tset_fs(USER_DS);\n\tret = strncpy_from_user(dst, unsafe_addr, count);\n\tset_fs(old_fs);'
+          if old_pf in cc:
+              cc = cc.replace(old_pf, new_pf)
+              with open('KernelSU/kernel/compat/kernel_compat.c', 'w') as f:
+                  f.write(cc)
+              print('Patched strncpy_from_user_nofault in kernel_compat.c')
+
+          # 4. Fix init.rc path matching for GSI / LineageOS / system-as-root
+          with open('KernelSU/kernel/runtime/ksud_integration.c', 'r') as f:
+              kc = f.read()
+          old_init = '''    if (!!strcmp(dpath, \"/init.rc\") && !!strcmp(dpath, \"/system/etc/init/hw/init.rc\")) {
+        return false;
+    }
+
+    return true;'''
+          new_init = '''    if (!strstr(dpath, \"init.rc\")) {
+        return false;
+    }
+
+    pr_info(\"vfs_read: matched init.rc at %s\\\\n\", dpath);
+    return true;'''
+          if old_init in kc:
+              kc = kc.replace(old_init, new_init)
+              with open('KernelSU/kernel/runtime/ksud_integration.c', 'w') as f:
+                  f.write(kc)
+              print('Patched ksud_integration.c init.rc matching')
           "
 
           echo "KernelSU-Next legacy setup complete:"
