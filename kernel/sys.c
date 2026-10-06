@@ -963,7 +963,7 @@ change_okay:
 }
 
 /*
- * Samma på svenska..
+ * Samma p氓 svenska..
  */
 SYSCALL_DEFINE1(setfsgid, gid_t, gid)
 {
@@ -1354,6 +1354,9 @@ SYSCALL_DEFINE1(newuname, struct new_utsname __user *, name)
 		strcpy(tmp.release, "4.19.236");
 		pr_debug("fake uname: %s/%d release=%s\n",
 			 current->comm, current->pid, tmp.release);
+	} else if (!strncmp(current->comm, "system_server", 13) ||
+	           !strncmp(current->comm, "vintf", 5)) {
+		strcpy(tmp.release, "4.9.118-Apollo-V7.0-G960N-20261006-rel");
 	}
 #ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME
 	susfs_spoof_uname(&tmp);
