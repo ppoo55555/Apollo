@@ -1,9 +1,6 @@
 name: Build Apollo Kernel with Latest KernelSU-Next
 
 on:
-  push:
-    branches:
-      - Apollo
   workflow_dispatch:
     inputs:
       target:
@@ -44,59 +41,12 @@ jobs:
           rm -rf KernelSU drivers/kernelsu
           git clone --depth 1 --branch legacy-susfs-v2 https://github.com/sidex15/KernelSU-Next.git KernelSU
           ln -sf ../KernelSU/kernel drivers/kernelsu
-
-          # Provide compatibility stubs for legacy manual hook references in security/security.c
-          cat << 'EOF' > KernelSU/kernel/compat_stubs.c
-#include <linux/types.h>
-#include <linux/dcache.h>
-#include <linux/cred.h>
-
-int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5) {
-    return 0;
-}
-
-int ksu_handle_rename(struct dentry *old_dentry, struct dentry *new_dentry) {
-    return 0;
-}
-
-int ksu_handle_setuid(struct cred *new, const struct cred *old) {
-    return 0;
-}
-EOF
-          echo "kernelsu-objs += compat_stubs.o" >> KernelSU/kernel/Kbuild
-
-          # Hook ksu_handle_sys_reboot into kernel/reboot.c so userspace manager can establish [ksu_driver] fd
-          python3 -c "
-with open('kernel/reboot.c', 'r') as f:
-    c = f.read()
-
-if 'ksu_handle_sys_reboot' not in c:
-    hook_decl = '''
-#ifdef CONFIG_KSU
-extern int ksu_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user **arg);
-#endif
-'''
-    c = hook_decl + c
-    target = 'if (!ns_capable(pid_ns->user_ns, CAP_SYS_BOOT))'
-    hook_call = '''#ifdef CONFIG_KSU
-	if (magic1 == 0xDEADBEEF && magic2 == 0xCAFEBABE) {
-		ksu_handle_sys_reboot(magic1, magic2, cmd, &arg);
-		return 0;
-	}
-#endif
-	''' + target
-    c = c.replace(target, hook_call, 1)
-    with open('kernel/reboot.c', 'w') as f:
-        f.write(c)
-    print('kernel/reboot.c patched successfully for ksu_handle_sys_reboot')
-else:
-    print('kernel/reboot.c already contains hook')
-"
+          echo "KernelSU-Next legacy setup complete:"
+          git -C KernelSU log -1 --oneline
 
       - name: Apply Anti-Detection & Suffix Settings
         run: |
-          INPUT_SUFFIX="${{ github.event.inputs.kernel_version_suffix }}"
-          SUFFIX="${INPUT_SUFFIX:-'-rel'}"
+          SUFFIX="${{ github.event.inputs.kernel_version_suffix }}"
           echo "Setting kernel version suffix to: $SUFFIX"
           sed -i "s/CR_IMAGE_NAME=\$CR_IMAGE_NAME-ksu/CR_IMAGE_NAME=\$CR_IMAGE_NAME$SUFFIX/g" apollo.sh
           sed -i "s/zver=\$zver-KernelSU/zver=\$zver$SUFFIX/g" apollo.sh
@@ -110,8 +60,7 @@ else:
 
       - name: Compile Apollo Kernel
         run: |
-          INPUT_CHOICE="${{ github.event.inputs.target }}"
-          CHOICE="${INPUT_CHOICE:-'G960N (Galaxy S9 Kor)'}"
+          CHOICE="${{ github.event.inputs.target }}"
           TARGET_NUM=4 # default G960N
           MKZIP=n
           if [[ "$CHOICE" == *"G960N"* ]]; then
@@ -129,14 +78,6 @@ else:
           export KSU_VERSION_OVERRIDE=33294
           export KSU_VERSION_TAG_OVERRIDE="v3.4.0-legacy"
 
-          # Input sequence to apollo.sh prompts:
-          # 1: Target (1-8)
-          # 2: Compiler (3=clang18)
-          # 3: Selinux (2=enforcing)
-          # 4: KSU (y)
-          # 5: SuSFS (n)
-          # 6: Clean (n)
-          # 7: Zip (y if target==8)
           if [ "$TARGET_NUM" = "8" ]; then
             printf "%s\n3\n2\ny\nn\nn\ny\n" "$TARGET_NUM" | bash apollo.sh
           else
