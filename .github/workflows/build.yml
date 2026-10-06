@@ -12,11 +12,6 @@ on:
           - 'G960N (Galaxy S9 Kor)'
           - 'G960F (Galaxy S9 Intl)'
           - 'ALL (All S9 / S9+ / Note9)'
-      ksu_branch:
-        description: 'KernelSU-Next Branch / Tag'
-        required: true
-        default: 'legacy'
-        type: string
       kernel_version_suffix:
         description: 'Kernel Version Suffix (replaces -ksu to hide from detection)'
         required: true
@@ -31,7 +26,6 @@ jobs:
       - name: Checkout Source
         uses: actions/checkout@v4
         with:
-          submodules: recursive
           fetch-depth: 1
 
       - name: Install Build Dependencies
@@ -41,19 +35,60 @@ jobs:
             zlib1g-dev libc6-dev-i386 libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils \
             xsltproc unzip fontconfig python-dev-is-python3 bsdiff bc libssl-dev ccache
 
-      - name: Update KernelSU-Next to Latest Legacy
+      - name: Setup KernelSU-Next v3.4.0 (Legacy)
         run: |
-          BRANCH="${{ github.event.inputs.ksu_branch }}"
-          echo "Updating KernelSU submodule to $BRANCH..."
-          cd KernelSU
-          git remote set-url origin https://github.com/KernelSU-Next/KernelSU-Next.git
-          git fetch origin "$BRANCH" --depth 1
-          git checkout FETCH_HEAD
-          cd ..
-          rm -rf drivers/kernelsu
+          echo "Setting up KernelSU-Next legacy v3.4.0..."
+          rm -rf KernelSU drivers/kernelsu
+          git clone --depth 1 --branch legacy-susfs-v2 https://github.com/sidex15/KernelSU-Next.git KernelSU
           ln -sf ../KernelSU/kernel drivers/kernelsu
-          echo "KernelSU-Next updated to:"
-          git -C KernelSU log -1 --oneline
+
+          # Provide compatibility stubs for legacy manual hook references in security/security.c
+          cat << 'EOF' > KernelSU/kernel/compat_stubs.c
+#include <linux/types.h>
+#include <linux/dcache.h>
+#include <linux/cred.h>
+
+int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5) {
+    return 0;
+}
+
+int ksu_handle_rename(struct dentry *old_dentry, struct dentry *new_dentry) {
+    return 0;
+}
+
+int ksu_handle_setuid(struct cred *new, const struct cred *old) {
+    return 0;
+}
+EOF
+          echo "kernelsu-objs += compat_stubs.o" >> KernelSU/kernel/Kbuild
+
+          # Hook ksu_handle_sys_reboot into kernel/reboot.c so userspace manager can establish [ksu_driver] fd
+          python3 -c "
+with open('kernel/reboot.c', 'r') as f:
+    c = f.read()
+
+if 'ksu_handle_sys_reboot' not in c:
+    hook_decl = '''
+#ifdef CONFIG_KSU
+extern int ksu_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user **arg);
+#endif
+'''
+    c = hook_decl + c
+    target = 'if (!ns_capable(pid_ns->user_ns, CAP_SYS_BOOT))'
+    hook_call = '''#ifdef CONFIG_KSU
+	if (magic1 == 0xDEADBEEF && magic2 == 0xCAFEBABE) {
+		ksu_handle_sys_reboot(magic1, magic2, cmd, &arg);
+		return 0;
+	}
+#endif
+	''' + target
+    c = c.replace(target, hook_call, 1)
+    with open('kernel/reboot.c', 'w') as f:
+        f.write(c)
+    print('kernel/reboot.c patched successfully for ksu_handle_sys_reboot')
+else:
+    print('kernel/reboot.c already contains hook')
+"
 
       - name: Apply Anti-Detection & Suffix Settings
         run: |
@@ -61,8 +96,6 @@ jobs:
           echo "Setting kernel version suffix to: $SUFFIX"
           sed -i "s/CR_IMAGE_NAME=\$CR_IMAGE_NAME-ksu/CR_IMAGE_NAME=\$CR_IMAGE_NAME$SUFFIX/g" apollo.sh
           sed -i "s/zver=\$zver-KernelSU/zver=\$zver$SUFFIX/g" apollo.sh
-          sed -i "s/BRANCH=\"next\"/BRANCH=\"${{ github.event.inputs.ksu_branch }}\"/g" apollo.sh
-          sed -i "s/submodule.KernelSU.branch next/submodule.KernelSU.branch ${{ github.event.inputs.ksu_branch }}/g" apollo.sh
 
       - name: Setup Toolchain (Clang 18)
         run: |

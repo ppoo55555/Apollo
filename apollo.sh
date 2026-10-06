@@ -410,84 +410,49 @@ BUILD_GENERATE_CONFIG()
     echo " Building SElinux Enforced Kernel"
   fi
   # Kernel SU
-  # Ensure Submodule is present
-  git submodule update --init --recursive
-  # Default
-  git config -f .gitmodules submodule.KernelSU.branch legacy
   if [[ "$CR_KSU" =~ ^[yY]$ ]]; then
     echo " Building KernelSU-Next"
-    # SUSFS-NEXT on Fork
-    if [[ "$CR_SUS" =~ ^[yY]$ ]]; then
-      REPO_URL="https://github.com/sidex15/KernelSU-Next"
-      BRANCH="next-susfs"
-      echo " Using sidex15 SuSFS repository and branch"
-    else
-      REPO_URL="https://github.com/KernelSU-Next/KernelSU-Next"
-      BRANCH="legacy"
-      echo " Using standard repository and branch"
-    fi
-    
-    # Update .gitmodules with correct repository
-    git config -f .gitmodules submodule.KernelSU.url "$REPO_URL"
-    git config -f .gitmodules submodule.KernelSU.branch "$BRANCH"
-    
-    # Sync and update submodule
-    git submodule sync --recursive
-    git submodule update --init --recursive
-    
-    # Image Info
     echo "CONFIG_KSU=y" >> $CR_DEFCONFIG/tmp_defconfig
     CR_IMAGE_NAME=$CR_IMAGE_NAME-rel
     zver=$zver-rel
-    
-  if [[ "$CR_SUS" =~ ^[yY]$ ]]; then
-    echo " Adding KernelSU-Next-SuSFS"
-    # SuSFS Config
-    echo "CONFIG_KSU_SUSFS=y" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_SUS_PATH=n" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_SUS_OVERLAYFS=y" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=n" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=n" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_SUS_SU=y" >> $CR_DEFCONFIG/tmp_defconfig
-    CR_IMAGE_NAME=$CR_IMAGE_NAME-susfs
-    zver=$zver-SuSFS
-  else
-    # Disable SuSFS
-    echo "CONFIG_KSU_SUSFS=n" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=n" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_SUS_PATH=n" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_SUS_MOUNT=n" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=n" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=n" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_SUS_KSTAT=n" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_SUS_OVERLAYFS=n" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=n" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=n" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=n" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_ENABLE_LOG=n" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=n" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=n" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=n" >> $CR_DEFCONFIG/tmp_defconfig
-    echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> $CR_DEFCONFIG/tmp_defconfig
-  fi
-    echo " Fetching KernelSU-Next $BRANCH Branch from $REPO_URL"
-    cd $CR_DIR/KernelSU
-    git reset --hard
-    git clean -fdx
-    git fetch origin
-    git checkout -B "$BRANCH" origin/"$BRANCH"
-    git pull --ff-only origin "$BRANCH"
-    cd $CR_DIR
+    if [[ "$CR_SUS" =~ ^[yY]$ ]]; then
+      echo " Adding KernelSU-Next-SuSFS"
+      echo "CONFIG_KSU_SUSFS=y" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SUS_PATH=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SUS_OVERLAYFS=y" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SUS_SU=y" >> $CR_DEFCONFIG/tmp_defconfig
+      CR_IMAGE_NAME=$CR_IMAGE_NAME-susfs
+      zver=$zver-SuSFS
+    else
+      echo "CONFIG_KSU_SUSFS=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SUS_PATH=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SUS_MOUNT=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SUS_KSTAT=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SUS_OVERLAYFS=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_ENABLE_LOG=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> $CR_DEFCONFIG/tmp_defconfig
+    fi
   else
     echo "# CONFIG_KSU is not set" >> $CR_DEFCONFIG/tmp_defconfig
   fi
