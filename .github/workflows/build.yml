@@ -45,55 +45,7 @@ jobs:
           git clone --depth 1 --branch legacy-susfs-v2 https://github.com/sidex15/KernelSU-Next.git KernelSU
           ln -sf ../KernelSU/kernel drivers/kernelsu
 
-          echo "Fixing Linux 4.9 compatibility & init.rc hook in KernelSU-Next..."
-          python3 -c "
-          import os
-          # 1. Alias strscpy_pad to __strscpy_pad across KernelSU source files
-          for root, dirs, files in os.walk('KernelSU/kernel'):
-              for f in files:
-                  if f.endswith(('.c', '.h')) and f != 'kernel_compat.h':
-                      p = os.path.join(root, f)
-                      with open(p, 'r') as fp:
-                          content = fp.read()
-                      if 'strscpy_pad' in content:
-                          content = content.replace('strscpy_pad', '__strscpy_pad')
-                          with open(p, 'w') as fp:
-                              fp.write(content)
-                          print(f'Patched strscpy_pad in {f}')
-
-          # 2. Add macro polyfill in kernel_compat.h for kernels < 4.14
-          with open('KernelSU/kernel/compat/kernel_compat.h', 'r') as f:
-              c = f.read()
-          target = '#endif\n}\n\n#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)'
-          patch = '#endif\n}\n\n#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 222)\n#define strscpy_pad __strscpy_pad\n#endif\n\n#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)'
-          if target in c:
-              c = c.replace(target, patch)
-              with open('KernelSU/kernel/compat/kernel_compat.h', 'w') as f:
-                  f.write(c)
-              print('Patched kernel_compat.h')
-
-          # 3. Allow pagefault in strncpy_from_user_nofault during execve
-          with open('KernelSU/kernel/compat/kernel_compat.c', 'r') as f:
-              cc = f.read()
-          old_pf = '\tset_fs(USER_DS);\n\tpagefault_disable();\n\tret = strncpy_from_user(dst, unsafe_addr, count);\n\tpagefault_enable();\n\tset_fs(old_fs);'
-          new_pf = '\tset_fs(USER_DS);\n\tret = strncpy_from_user(dst, unsafe_addr, count);\n\tset_fs(old_fs);'
-          if old_pf in cc:
-              cc = cc.replace(old_pf, new_pf)
-              with open('KernelSU/kernel/compat/kernel_compat.c', 'w') as f:
-                  f.write(cc)
-              print('Patched strncpy_from_user_nofault in kernel_compat.c')
-
-          # 4. Fix init.rc path matching for GSI / LineageOS / system-as-root
-          with open('KernelSU/kernel/runtime/ksud_integration.c', 'r') as f:
-              kc = f.read()
-          old_init = "if (!!strcmp(dpath, \"/init.rc\") && !!strcmp(dpath, \"/system/etc/init/hw/init.rc\")) {\n        return false;\n    }\n\n    return true;"
-          new_init = "if (!strstr(dpath, \"init.rc\")) {\n        return false;\n    }\n\n    pr_info(\"vfs_read: matched init.rc at %s\\n\", dpath);\n    return true;"
-          if old_init in kc:
-              kc = kc.replace(old_init, new_init)
-              with open('KernelSU/kernel/runtime/ksud_integration.c', 'w') as f:
-                  f.write(kc)
-              print('Patched ksud_integration.c init.rc matching')
-          "
+          python3 .github/patch_kernelsu.py
 
           echo "KernelSU-Next legacy setup complete:"
           git -C KernelSU log -1 --oneline
