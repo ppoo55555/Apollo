@@ -86,6 +86,8 @@ jobs:
           echo "Compiling with Target $TARGET_NUM (Clang 18, Enforcing, KSU v3.4.0)..."
           export KSU_VERSION_OVERRIDE=33294
           export KSU_VERSION_TAG_OVERRIDE="v3.4.0-legacy"
+          export KBUILD_BUILD_USER="kleaf"
+          export KBUILD_BUILD_HOST="build-host"
 
           if [ "$TARGET_NUM" = "8" ]; then
             printf "%s\n3\n2\ny\nn\nn\ny\n" "$TARGET_NUM" | bash apollo.sh

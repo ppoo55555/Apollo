@@ -498,7 +498,9 @@ BUILD_ZIMAGE()
 	echo "----------------------------------------------"
 	echo " "
 	echo "Building zImage for $CR_VARIANT"
-	export LOCALVERSION=-$CR_IMAGE_NAME
+	export KBUILD_BUILD_USER="kleaf"
+	export KBUILD_BUILD_HOST="build-host"
+	export LOCALVERSION=""
 	echo "Make $CR_CONFIG"
 	$compile $CR_CONFIG
 	echo "Make Kernel with $CR_COMPILER_ARG"
