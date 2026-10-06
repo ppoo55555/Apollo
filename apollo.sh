@@ -308,7 +308,7 @@ BUILD_OPTIONS()
 			fi
 			GIT_VERSION=$(git -C "$KERNELSU_DIR" rev-list --count HEAD 2>/dev/null)
 			if [[ "$GIT_VERSION" =~ ^[0-9]+$ ]]; then
-				KSU_VERSION=$((10000 + GIT_VERSION + 200))
+				KSU_VERSION=$((30000 + GIT_VERSION + 289))
 			else
 				KSU_VERSION="unknown"
 			fi
@@ -413,7 +413,7 @@ BUILD_GENERATE_CONFIG()
   # Ensure Submodule is present
   git submodule update --init --recursive
   # Default
-  git config -f .gitmodules submodule.KernelSU.branch next
+  git config -f .gitmodules submodule.KernelSU.branch legacy
   if [[ "$CR_KSU" =~ ^[yY]$ ]]; then
     echo " Building KernelSU-Next"
     # SUSFS-NEXT on Fork
@@ -423,7 +423,7 @@ BUILD_GENERATE_CONFIG()
       echo " Using sidex15 SuSFS repository and branch"
     else
       REPO_URL="https://github.com/KernelSU-Next/KernelSU-Next"
-      BRANCH="next"
+      BRANCH="legacy"
       echo " Using standard repository and branch"
     fi
     
@@ -437,8 +437,8 @@ BUILD_GENERATE_CONFIG()
     
     # Image Info
     echo "CONFIG_KSU=y" >> $CR_DEFCONFIG/tmp_defconfig
-    CR_IMAGE_NAME=$CR_IMAGE_NAME-ksu
-    zver=$zver-KernelSU
+    CR_IMAGE_NAME=$CR_IMAGE_NAME-rel
+    zver=$zver-rel
     
   if [[ "$CR_SUS" =~ ^[yY]$ ]]; then
     echo " Adding KernelSU-Next-SuSFS"

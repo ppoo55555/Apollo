@@ -43,10 +43,11 @@ jobs:
 
       - name: Update KernelSU-Next to Latest Legacy
         run: |
-          echo "Updating KernelSU submodule to ${{ github.event.inputs.ksu_branch }}..."
+          BRANCH="${{ github.event.inputs.ksu_branch }}"
+          echo "Updating KernelSU submodule to $BRANCH..."
           cd KernelSU
           git remote set-url origin https://github.com/KernelSU-Next/KernelSU-Next.git
-          git fetch origin ${{ github.event.inputs.ksu_branch }} --depth 1
+          git fetch origin "$BRANCH" --depth 1
           git checkout FETCH_HEAD
           cd ..
           rm -rf drivers/kernelsu
@@ -54,14 +55,14 @@ jobs:
           echo "KernelSU-Next updated to:"
           git -C KernelSU log -1 --oneline
 
-      - name: Apply Anti-Detection Stealth Patches
+      - name: Apply Anti-Detection & Suffix Settings
         run: |
           SUFFIX="${{ github.event.inputs.kernel_version_suffix }}"
           echo "Setting kernel version suffix to: $SUFFIX"
-          # Replace -ksu with custom suffix (e.g. -rel) in apollo.sh
           sed -i "s/CR_IMAGE_NAME=\$CR_IMAGE_NAME-ksu/CR_IMAGE_NAME=\$CR_IMAGE_NAME$SUFFIX/g" apollo.sh
           sed -i "s/zver=\$zver-KernelSU/zver=\$zver$SUFFIX/g" apollo.sh
-          sed -i 's/"-ksu"/"'"$SUFFIX"'"/g' apollo.sh || true
+          sed -i "s/BRANCH=\"next\"/BRANCH=\"${{ github.event.inputs.ksu_branch }}\"/g" apollo.sh
+          sed -i "s/submodule.KernelSU.branch next/submodule.KernelSU.branch ${{ github.event.inputs.ksu_branch }}/g" apollo.sh
 
       - name: Setup Toolchain (Clang 18)
         run: |
@@ -86,9 +87,23 @@ jobs:
             MKZIP=y
           fi
 
-          echo "Compiling with Target $TARGET_NUM..."
-          # Target (1-8), Compiler (3=clang18), Selinux (2=enforcing), KSU (y), Clean (n), Zip (y/n)
-          printf "%s\n3\n2\ny\nn\n%s\n" "$TARGET_NUM" "$MKZIP" | bash apollo.sh
+          echo "Compiling with Target $TARGET_NUM (Clang 18, Enforcing, KSU v3.4.0)..."
+          export KSU_VERSION_OVERRIDE=33294
+          export KSU_VERSION_TAG_OVERRIDE="v3.4.0-legacy"
+
+          # Input sequence to apollo.sh prompts:
+          # 1: Target (1-8)
+          # 2: Compiler (3=clang18)
+          # 3: Selinux (2=enforcing)
+          # 4: KSU (y)
+          # 5: SuSFS (n)
+          # 6: Clean (n)
+          # 7: Zip (y if target==8)
+          if [ "$TARGET_NUM" = "8" ]; then
+            printf "%s\n3\n2\ny\nn\nn\ny\n" "$TARGET_NUM" | bash apollo.sh
+          else
+            printf "%s\n3\n2\ny\nn\nn\n" "$TARGET_NUM" | bash apollo.sh
+          fi
 
       - name: Package Artifacts
         run: |
@@ -106,5 +121,5 @@ jobs:
       - name: Upload Kernel Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Apollo-KernelSU-Next-Build
+          name: Apollo-KernelSU-Next-v3.4.0-Build
           path: out_artifacts/*
