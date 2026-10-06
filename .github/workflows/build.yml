@@ -17,6 +17,9 @@ on:
         required: true
         default: '-rel'
         type: string
+  push:
+    branches:
+      - Apollo
 
 jobs:
   build:
@@ -107,6 +110,7 @@ jobs:
       - name: Apply Anti-Detection & Suffix Settings
         run: |
           SUFFIX="${{ github.event.inputs.kernel_version_suffix }}"
+          if [ -z "$SUFFIX" ]; then SUFFIX="-rel"; fi
           echo "Setting kernel version suffix to: $SUFFIX"
           sed -i "s/CR_IMAGE_NAME=\$CR_IMAGE_NAME-ksu/CR_IMAGE_NAME=\$CR_IMAGE_NAME$SUFFIX/g" apollo.sh
           sed -i "s/zver=\$zver-KernelSU/zver=\$zver$SUFFIX/g" apollo.sh
