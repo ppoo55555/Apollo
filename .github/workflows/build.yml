@@ -86,17 +86,8 @@ jobs:
           # 4. Fix init.rc path matching for GSI / LineageOS / system-as-root
           with open('KernelSU/kernel/runtime/ksud_integration.c', 'r') as f:
               kc = f.read()
-          old_init = '''    if (!!strcmp(dpath, \"/init.rc\") && !!strcmp(dpath, \"/system/etc/init/hw/init.rc\")) {
-        return false;
-    }
-
-    return true;'''
-          new_init = '''    if (!strstr(dpath, \"init.rc\")) {
-        return false;
-    }
-
-    pr_info(\"vfs_read: matched init.rc at %s\\\\n\", dpath);
-    return true;'''
+          old_init = "if (!!strcmp(dpath, \"/init.rc\") && !!strcmp(dpath, \"/system/etc/init/hw/init.rc\")) {\n        return false;\n    }\n\n    return true;"
+          new_init = "if (!strstr(dpath, \"init.rc\")) {\n        return false;\n    }\n\n    pr_info(\"vfs_read: matched init.rc at %s\\n\", dpath);\n    return true;"
           if old_init in kc:
               kc = kc.replace(old_init, new_init)
               with open('KernelSU/kernel/runtime/ksud_integration.c', 'w') as f:
