@@ -89,6 +89,8 @@ jobs:
 
       - name: Compile Apollo Kernel
         run: |
+          find . -name "*.sh" -exec sed -i 's/\r$//' {} +
+          chmod +x apollo.sh Apollo/A.I.K/*.sh || true
           CHOICE="${{ github.event.inputs.target }}"
           TARGET_NUM=4 # default G960N
           MKZIP=n
