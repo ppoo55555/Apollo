@@ -140,7 +140,14 @@ struct st_sus_su {
 /* sus_path */
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 int susfs_set_i_state_on_external_dir(char __user* user_info, int cmd);
-int susfs_add_sus_path(struct st_susfs_sus_path* __user user_info);
+int susfs_add_sus_path_kernel(struct st_susfs_sus_path* __user user_info);
+int susfs_add_sus_path_loop_kernel(struct st_susfs_sus_path* __user user_info);
+static inline void susfs_add_sus_path(void __user **arg) {
+	if (arg && *arg) susfs_add_sus_path_kernel((struct st_susfs_sus_path __user *)*arg);
+}
+static inline void susfs_add_sus_path_loop(void __user **arg) {
+	if (arg && *arg) susfs_add_sus_path_loop_kernel((struct st_susfs_sus_path __user *)*arg);
+}
 #endif
 /* sus_mount */
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
@@ -155,23 +162,35 @@ void susfs_auto_add_sus_ksu_default_mount(const char __user *to_pathname);
 
 /* sus_kstat */
 #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
-int susfs_add_sus_kstat(struct st_susfs_sus_kstat* __user user_info);
-int susfs_update_sus_kstat(struct st_susfs_sus_kstat* __user user_info);
+int susfs_add_sus_kstat_kernel(struct st_susfs_sus_kstat* __user user_info);
+int susfs_update_sus_kstat_kernel(struct st_susfs_sus_kstat* __user user_info);
 void susfs_sus_ino_for_generic_fillattr(unsigned long ino, struct kstat *stat);
 void susfs_sus_ino_for_show_map_vma(unsigned long ino, dev_t *out_dev, unsigned long *out_ino);
+static inline void susfs_add_sus_kstat(void __user **arg) {
+	if (arg && *arg) susfs_add_sus_kstat_kernel((struct st_susfs_sus_kstat __user *)*arg);
+}
+static inline void susfs_update_sus_kstat(void __user **arg) {
+	if (arg && *arg) susfs_update_sus_kstat_kernel((struct st_susfs_sus_kstat __user *)*arg);
+}
 #endif
 /* try_umount */
 #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
-int susfs_add_try_umount(struct st_susfs_try_umount* __user user_info);
+int susfs_add_try_umount_kernel(struct st_susfs_try_umount* __user user_info);
 void susfs_try_umount(uid_t target_uid);
 #ifdef CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT
 void susfs_auto_add_try_umount_for_bind_mount(struct path *path);
 #endif // #ifdef CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT
+static inline void susfs_add_try_umount(void __user **arg) {
+	if (arg && *arg) susfs_add_try_umount_kernel((struct st_susfs_try_umount __user *)*arg);
+}
 #endif // #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 /* spoof_uname */
 #ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME
-int susfs_set_uname(struct st_susfs_uname* __user user_info);
+int susfs_set_uname_kernel(struct st_susfs_uname* __user user_info);
 void susfs_spoof_uname(struct new_utsname* tmp);
+static inline void susfs_set_uname(void __user **arg) {
+	if (arg && *arg) susfs_set_uname_kernel((struct st_susfs_uname __user *)*arg);
+}
 #endif
 /* set_log */
 #ifdef CONFIG_KSU_SUSFS_ENABLE_LOG
@@ -179,13 +198,19 @@ void susfs_set_log(bool enabled);
 #endif
 /* spoof_cmdline_or_bootconfig */
 #ifdef CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
-int susfs_set_cmdline_or_bootconfig(char* __user user_fake_boot_config);
+int susfs_set_cmdline_or_bootconfig_kernel(char* __user user_fake_boot_config);
 int susfs_spoof_cmdline_or_bootconfig(struct seq_file *m);
+static inline void susfs_set_cmdline_or_bootconfig(void __user **arg) {
+	if (arg && *arg) susfs_set_cmdline_or_bootconfig_kernel((char __user *)*arg);
+}
 #endif
 /* open_redirect */
 #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
-int susfs_add_open_redirect(struct st_susfs_open_redirect* __user user_info);
+int susfs_add_open_redirect_kernel(struct st_susfs_open_redirect* __user user_info);
 struct filename* susfs_get_redirected_path(unsigned long ino);
+static inline void susfs_add_open_redirect(void __user **arg) {
+	if (arg && *arg) susfs_add_open_redirect_kernel((struct st_susfs_open_redirect __user *)*arg);
+}
 #endif
 /* sus_su */
 #ifdef CONFIG_KSU_SUSFS_SUS_SU
@@ -196,38 +221,43 @@ int susfs_sus_su(struct st_sus_su* __user user_info);
 int susfs_get_enabled_features_kernel(char __user* buf, size_t bufsize);
 void susfs_set_avc_log_spoofing_kernel(bool enabled);
 
-static inline int susfs_get_enabled_features(void __user *arg) {
-	return susfs_get_enabled_features_kernel((char __user*)arg, PAGE_SIZE);
+static inline int susfs_get_enabled_features(void __user **arg) {
+	if (arg && *arg) return susfs_get_enabled_features_kernel((char __user *)*arg, PAGE_SIZE);
+	return -EINVAL;
 }
 
-static inline void susfs_set_avc_log_spoofing(void __user *arg) {
+static inline void susfs_set_avc_log_spoofing(void __user **arg) {
 	bool enabled = false;
-	if (!copy_from_user(&enabled, arg, sizeof(enabled))) {
+	if (arg && *arg && !copy_from_user(&enabled, (void __user *)*arg, sizeof(enabled))) {
 		susfs_set_avc_log_spoofing_kernel(enabled);
 	}
 }
 
-static inline void susfs_show_version(void __user *arg) {
-	copy_to_user(arg, SUSFS_VERSION, sizeof(SUSFS_VERSION));
+static inline void susfs_show_version(void __user **arg) {
+	if (arg && *arg) copy_to_user((void __user *)*arg, SUSFS_VERSION, sizeof(SUSFS_VERSION));
 }
 
-static inline void susfs_show_variant(void __user *arg) {
-	copy_to_user(arg, SUSFS_VARIANT, sizeof(SUSFS_VARIANT));
+static inline void susfs_show_variant(void __user **arg) {
+	if (arg && *arg) copy_to_user((void __user *)*arg, SUSFS_VARIANT, sizeof(SUSFS_VARIANT));
 }
 
-static inline void susfs_enable_log(void __user *arg) {
+static inline void susfs_enable_log(void __user **arg) {
 #ifdef CONFIG_KSU_SUSFS_ENABLE_LOG
 	bool enabled = false;
-	if (!copy_from_user(&enabled, arg, sizeof(enabled))) {
+	if (arg && *arg && !copy_from_user(&enabled, (void __user *)*arg, sizeof(enabled))) {
 		susfs_set_log(enabled);
 	}
 #endif
 }
 
-static inline void susfs_set_hide_sus_mnts_for_non_su_procs(void __user *arg) {
+static inline void susfs_set_hide_sus_mnts_for_non_su_procs(void __user **arg) {
+}
+
+static inline void susfs_start_sdcard_monitor_fn(void) {
 }
 
 /* susfs_init */
 void susfs_init(void);
 
 #endif
+

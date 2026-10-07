@@ -128,7 +128,7 @@ out_kfree_info:
 	return err;
 }
 
-int susfs_add_sus_path(struct st_susfs_sus_path* __user user_info) {
+int susfs_add_sus_path_kernel(struct st_susfs_sus_path* __user user_info) {
 	struct st_susfs_sus_path_list *cursor = NULL, *temp = NULL;
 	struct st_susfs_sus_path_list *new_list = NULL;
 	struct st_susfs_sus_path info;
@@ -254,7 +254,7 @@ out_path_put_path:
 	return err;
 }
 
-int susfs_add_sus_path_loop(struct st_susfs_sus_path* __user user_info) {
+int susfs_add_sus_path_loop_kernel(struct st_susfs_sus_path* __user user_info) {
 	struct st_susfs_sus_path_list *cursor = NULL, *temp = NULL;
 	struct st_susfs_sus_path_list *new_list = NULL;
 	struct st_susfs_sus_path info;
@@ -649,7 +649,7 @@ static int susfs_update_sus_kstat_inode(char *target_pathname) {
 	return 0;
 }
 
-int susfs_add_sus_kstat(struct st_susfs_sus_kstat* __user user_info) {
+int susfs_add_sus_kstat_kernel(struct st_susfs_sus_kstat* __user user_info) {
 	struct st_susfs_sus_kstat info;
 	struct st_susfs_sus_kstat_hlist *new_entry, *tmp_entry;
 	struct hlist_node *tmp_node;
@@ -744,7 +744,7 @@ int susfs_add_sus_kstat(struct st_susfs_sus_kstat* __user user_info) {
 	return 0;
 }
 
-int susfs_update_sus_kstat(struct st_susfs_sus_kstat* __user user_info) {
+int susfs_update_sus_kstat_kernel(struct st_susfs_sus_kstat* __user user_info) {
 	struct st_susfs_sus_kstat info;
 	struct st_susfs_sus_kstat_hlist *new_entry, *tmp_entry;
 	struct hlist_node *tmp_node;
@@ -833,7 +833,7 @@ void susfs_sus_ino_for_show_map_vma(unsigned long ino, dev_t *out_dev, unsigned 
 /* try_umount */
 #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 static LIST_HEAD(LH_TRY_UMOUNT_PATH);
-int susfs_add_try_umount(struct st_susfs_try_umount* __user user_info) {
+int susfs_add_try_umount_kernel(struct st_susfs_try_umount* __user user_info) {
 	struct st_susfs_try_umount_list *cursor = NULL, *temp = NULL;
 	struct st_susfs_try_umount_list *new_list = NULL;
 	struct st_susfs_try_umount info;
@@ -969,7 +969,7 @@ static void susfs_my_uname_init(void) {
 	memset(&my_uname, 0, sizeof(my_uname));
 }
 
-int susfs_set_uname(struct st_susfs_uname* __user user_info) {
+int susfs_set_uname_kernel(struct st_susfs_uname* __user user_info) {
 	struct st_susfs_uname info;
 
 	if (copy_from_user(&info, user_info, sizeof(struct st_susfs_uname))) {
@@ -1019,7 +1019,7 @@ void susfs_set_log(bool enabled) {
 /* spoof_cmdline_or_bootconfig */
 #ifdef CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
 static char *fake_cmdline_or_bootconfig = NULL;
-int susfs_set_cmdline_or_bootconfig(char* __user user_fake_cmdline_or_bootconfig) {
+int susfs_set_cmdline_or_bootconfig_kernel(char* __user user_fake_cmdline_or_bootconfig) {
 	int res;
 
 	if (!fake_cmdline_or_bootconfig) {
@@ -1087,7 +1087,7 @@ out_path_put_target:
 	return err;
 }
 
-int susfs_add_open_redirect(struct st_susfs_open_redirect* __user user_info) {
+int susfs_add_open_redirect_kernel(struct st_susfs_open_redirect* __user user_info) {
 	struct st_susfs_open_redirect info;
 	struct st_susfs_open_redirect_hlist *new_entry, *tmp_entry;
 	struct hlist_node *tmp_node;
