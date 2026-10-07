@@ -419,7 +419,7 @@ BUILD_GENERATE_CONFIG()
       echo " Adding KernelSU-Next-SuSFS"
       echo "CONFIG_KSU_SUSFS=y" >> $CR_DEFCONFIG/tmp_defconfig
       echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
-      echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SUS_PATH=n" >> $CR_DEFCONFIG/tmp_defconfig
       echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
       echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
       echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
@@ -427,10 +427,10 @@ BUILD_GENERATE_CONFIG()
       echo "CONFIG_KSU_SUSFS_SUS_OVERLAYFS=y" >> $CR_DEFCONFIG/tmp_defconfig
       echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
       echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
-      echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=n" >> $CR_DEFCONFIG/tmp_defconfig
       echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> $CR_DEFCONFIG/tmp_defconfig
       echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> $CR_DEFCONFIG/tmp_defconfig
-      echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=n" >> $CR_DEFCONFIG/tmp_defconfig
       echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> $CR_DEFCONFIG/tmp_defconfig
       echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> $CR_DEFCONFIG/tmp_defconfig
       echo "CONFIG_KSU_SUSFS_SUS_MAP=n" >> $CR_DEFCONFIG/tmp_defconfig
