@@ -1082,6 +1082,8 @@ static int susfs_update_open_redirect_inode(struct st_susfs_open_redirect_hlist 
 		goto out_path_put_target;
 	}
 
+	new_entry->target_ino = inode_target->i_ino;
+
 	spin_lock(&inode_target->i_lock);
 	set_bit(AS_FLAGS_OPEN_REDIRECT, &inode_target->i_mapping->flags);
 	spin_unlock(&inode_target->i_lock);
@@ -1120,7 +1122,6 @@ int susfs_add_open_redirect_kernel(struct st_susfs_open_redirect* __user user_in
 		return 1;
 	}
 
-	new_entry->target_ino = info.target_ino;
 	strncpy(new_entry->target_pathname, info.target_pathname, SUSFS_MAX_LEN_PATHNAME-1);
 	strncpy(new_entry->redirected_pathname, info.redirected_pathname, SUSFS_MAX_LEN_PATHNAME-1);
 	if (susfs_update_open_redirect_inode(new_entry)) {
@@ -1130,7 +1131,7 @@ int susfs_add_open_redirect_kernel(struct st_susfs_open_redirect* __user user_in
 	}
 
 	spin_lock(&susfs_spin_lock);
-	hash_add(OPEN_REDIRECT_HLIST, &new_entry->node, info.target_ino);
+	hash_add(OPEN_REDIRECT_HLIST, &new_entry->node, new_entry->target_ino);
 	if (update_hlist) {
 		SUSFS_LOGI("target_ino: '%lu', target_pathname: '%s', redirected_pathname: '%s', is successfully updated to OPEN_REDIRECT_HLIST\n",
 				new_entry->target_ino, new_entry->target_pathname, new_entry->redirected_pathname);	

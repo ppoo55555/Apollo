@@ -7,6 +7,8 @@
 #include <linux/hashtable.h>
 #include <linux/path.h>
 #include <linux/susfs_def.h>
+#include <linux/uaccess.h>
+#include <linux/slab.h>
 
 #define SUSFS_VERSION "v2.3.0"
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
@@ -66,21 +68,23 @@ struct st_susfs_sus_mount_list {
 /* sus_kstat */
 #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
 struct st_susfs_sus_kstat {
-	int                     is_statically;
-	unsigned long           target_ino; // the ino after bind mounted or overlayed
-	char                    target_pathname[SUSFS_MAX_LEN_PATHNAME];
-	unsigned long           spoofed_ino;
-	unsigned long           spoofed_dev;
-	unsigned int            spoofed_nlink;
-	long long               spoofed_size;
-	long                    spoofed_atime_tv_sec;
-	long                    spoofed_mtime_tv_sec;
-	long                    spoofed_ctime_tv_sec;
-	long                    spoofed_atime_tv_nsec;
-	long                    spoofed_mtime_tv_nsec;
-	long                    spoofed_ctime_tv_nsec;
-	unsigned long           spoofed_blksize;
-	unsigned long long      spoofed_blocks;
+	bool                                    is_statically;
+	unsigned long                           target_ino; // the ino after bind mounted or overlayed
+	char                                    target_pathname[SUSFS_MAX_LEN_PATHNAME];
+	unsigned long                           spoofed_ino;
+	unsigned long                           spoofed_dev;
+	unsigned int                            spoofed_nlink;
+	long long                               spoofed_size;
+	long                                    spoofed_atime_tv_sec;
+	unsigned long                           spoofed_atime_tv_nsec;
+	long                                    spoofed_mtime_tv_sec;
+	unsigned long                           spoofed_mtime_tv_nsec;
+	long                                    spoofed_ctime_tv_sec;
+	unsigned long                           spoofed_ctime_tv_nsec;
+	long long                               spoofed_blocks;
+	long                                    spoofed_blksize;
+	int                                     flags;
+	int                                     err;
 };
 
 struct st_susfs_sus_kstat_hlist {
@@ -108,15 +112,17 @@ struct st_susfs_try_umount_list {
 struct st_susfs_uname {
 	char        release[__NEW_UTS_LEN+1];
 	char        version[__NEW_UTS_LEN+1];
+	int         err;
 };
 #endif
 
 /* open_redirect */
 #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
 struct st_susfs_open_redirect {
-	unsigned long                    target_ino;
 	char                             target_pathname[SUSFS_MAX_LEN_PATHNAME];
 	char                             redirected_pathname[SUSFS_MAX_LEN_PATHNAME];
+	int                              uid_scheme;
+	int                              err;
 };
 
 struct st_susfs_open_redirect_hlist {
@@ -133,6 +139,50 @@ struct st_sus_su {
 	int         mode;
 };
 #endif
+
+/* susfs v2 userspace ABI structures */
+#define SUSFS_ENABLED_FEATURES_SIZE 8192
+
+struct st_susfs_version {
+	char susfs_version[16];
+	int err;
+};
+
+struct st_susfs_variant {
+	char susfs_variant[16];
+	int err;
+};
+
+struct st_susfs_enabled_features {
+	char enabled_features[SUSFS_ENABLED_FEATURES_SIZE];
+	int err;
+};
+
+struct st_susfs_avc_log_spoofing {
+	bool enabled;
+	int err;
+};
+
+struct st_susfs_hide_sus_mnts_for_non_su_procs {
+	bool enabled;
+	int err;
+};
+
+struct st_susfs_log {
+	bool enabled;
+	int err;
+};
+
+struct st_susfs_sus_map {
+	char target_pathname[SUSFS_MAX_LEN_PATHNAME];
+	int err;
+};
+
+#define SUSFS_FAKE_CMDLINE_OR_BOOTCONFIG_SIZE 8192
+struct st_susfs_spoof_cmdline_or_bootconfig {
+	char fake_cmdline_or_bootconfig[SUSFS_FAKE_CMDLINE_OR_BOOTCONFIG_SIZE];
+	int err;
+};
 
 /***********************/
 /* FORWARD DECLARATION */
@@ -167,10 +217,18 @@ int susfs_update_sus_kstat_kernel(struct st_susfs_sus_kstat* __user user_info);
 void susfs_sus_ino_for_generic_fillattr(unsigned long ino, struct kstat *stat);
 void susfs_sus_ino_for_show_map_vma(unsigned long ino, dev_t *out_dev, unsigned long *out_ino);
 static inline void susfs_add_sus_kstat(void __user **arg) {
-	if (arg && *arg) susfs_add_sus_kstat_kernel((struct st_susfs_sus_kstat __user *)*arg);
+	int err = 0;
+	if (arg && *arg) {
+		err = susfs_add_sus_kstat_kernel((struct st_susfs_sus_kstat __user *)*arg);
+		copy_to_user(&((struct st_susfs_sus_kstat __user *)*arg)->err, &err, sizeof(err));
+	}
 }
 static inline void susfs_update_sus_kstat(void __user **arg) {
-	if (arg && *arg) susfs_update_sus_kstat_kernel((struct st_susfs_sus_kstat __user *)*arg);
+	int err = 0;
+	if (arg && *arg) {
+		err = susfs_update_sus_kstat_kernel((struct st_susfs_sus_kstat __user *)*arg);
+		copy_to_user(&((struct st_susfs_sus_kstat __user *)*arg)->err, &err, sizeof(err));
+	}
 }
 #endif
 /* try_umount */
@@ -190,7 +248,11 @@ static inline void susfs_add_try_umount(void __user **arg) {
 int susfs_set_uname_kernel(struct st_susfs_uname* __user user_info);
 void susfs_spoof_uname(struct new_utsname* tmp);
 static inline void susfs_set_uname(void __user **arg) {
-	if (arg && *arg) susfs_set_uname_kernel((struct st_susfs_uname __user *)*arg);
+	int err = 0;
+	if (arg && *arg) {
+		err = susfs_set_uname_kernel((struct st_susfs_uname __user *)*arg);
+		copy_to_user(&((struct st_susfs_uname __user *)*arg)->err, &err, sizeof(err));
+	}
 }
 #endif
 /* set_log */
@@ -202,7 +264,11 @@ void susfs_set_log(bool enabled);
 int susfs_set_cmdline_or_bootconfig_kernel(char* __user user_fake_boot_config);
 int susfs_spoof_cmdline_or_bootconfig(struct seq_file *m);
 static inline void susfs_set_cmdline_or_bootconfig(void __user **arg) {
-	if (arg && *arg) susfs_set_cmdline_or_bootconfig_kernel((char __user *)*arg);
+	int err = 0;
+	if (arg && *arg) {
+		err = susfs_set_cmdline_or_bootconfig_kernel((char __user *)*arg);
+		copy_to_user(&((struct st_susfs_spoof_cmdline_or_bootconfig __user *)*arg)->err, &err, sizeof(err));
+	}
 }
 #endif
 /* open_redirect */
@@ -210,7 +276,11 @@ static inline void susfs_set_cmdline_or_bootconfig(void __user **arg) {
 int susfs_add_open_redirect_kernel(struct st_susfs_open_redirect* __user user_info);
 struct filename* susfs_get_redirected_path(unsigned long ino);
 static inline void susfs_add_open_redirect(void __user **arg) {
-	if (arg && *arg) susfs_add_open_redirect_kernel((struct st_susfs_open_redirect __user *)*arg);
+	int err = 0;
+	if (arg && *arg) {
+		err = susfs_add_open_redirect_kernel((struct st_susfs_open_redirect __user *)*arg);
+		copy_to_user(&((struct st_susfs_open_redirect __user *)*arg)->err, &err, sizeof(err));
+	}
 }
 #endif
 /* sus_su */
@@ -222,42 +292,93 @@ int susfs_sus_su(struct st_sus_su* __user user_info);
 int susfs_get_enabled_features_kernel(char __user* buf, size_t bufsize);
 void susfs_set_avc_log_spoofing_kernel(bool enabled);
 
-static inline int susfs_get_enabled_features(void __user **arg) {
-	if (arg && *arg) return susfs_get_enabled_features_kernel((char __user *)*arg, PAGE_SIZE);
-	return -EINVAL;
+static inline void susfs_get_enabled_features(void __user **arg) {
+	int err = 0;
+	if (arg && *arg) {
+		susfs_get_enabled_features_kernel((char __user *)*arg, SUSFS_ENABLED_FEATURES_SIZE);
+		copy_to_user(&((struct st_susfs_enabled_features __user *)*arg)->err, &err, sizeof(err));
+	}
 }
 
 static inline void susfs_set_avc_log_spoofing(void __user **arg) {
-	bool enabled = false;
-	if (arg && *arg && !copy_from_user(&enabled, (void __user *)*arg, sizeof(enabled))) {
-		susfs_set_avc_log_spoofing_kernel(enabled);
+	struct st_susfs_avc_log_spoofing info = {0};
+	if (!arg || !*arg) return;
+	if (copy_from_user(&info, (struct st_susfs_avc_log_spoofing __user *)*arg, sizeof(info))) {
+		info.err = -EFAULT;
+		goto out;
 	}
+	susfs_set_avc_log_spoofing_kernel(info.enabled);
+	info.err = 0;
+out:
+	copy_to_user(&((struct st_susfs_avc_log_spoofing __user *)*arg)->err, &info.err, sizeof(info.err));
 }
 
 static inline void susfs_show_version(void __user **arg) {
-	if (arg && *arg) copy_to_user((void __user *)*arg, SUSFS_VERSION, sizeof(SUSFS_VERSION));
+	struct st_susfs_version info = {0};
+	if (!arg || !*arg) return;
+	if (copy_from_user(&info, (struct st_susfs_version __user *)*arg, sizeof(info))) {
+		info.err = -EFAULT;
+		goto out;
+	}
+	strncpy(info.susfs_version, SUSFS_VERSION, sizeof(info.susfs_version) - 1);
+	info.err = 0;
+out:
+	copy_to_user((struct st_susfs_version __user *)*arg, &info, sizeof(info));
 }
 
 static inline void susfs_show_variant(void __user **arg) {
-	if (arg && *arg) copy_to_user((void __user *)*arg, SUSFS_VARIANT, sizeof(SUSFS_VARIANT));
+	struct st_susfs_variant info = {0};
+	if (!arg || !*arg) return;
+	if (copy_from_user(&info, (struct st_susfs_variant __user *)*arg, sizeof(info))) {
+		info.err = -EFAULT;
+		goto out;
+	}
+	strncpy(info.susfs_variant, SUSFS_VARIANT, sizeof(info.susfs_variant) - 1);
+	info.err = 0;
+out:
+	copy_to_user((struct st_susfs_variant __user *)*arg, &info, sizeof(info));
 }
 
 static inline void susfs_enable_log(void __user **arg) {
-#ifdef CONFIG_KSU_SUSFS_ENABLE_LOG
-	bool enabled = false;
-	if (arg && *arg && !copy_from_user(&enabled, (void __user *)*arg, sizeof(enabled))) {
-		susfs_set_log(enabled);
+	struct st_susfs_log info = {0};
+	if (!arg || !*arg) return;
+	if (copy_from_user(&info, (struct st_susfs_log __user *)*arg, sizeof(info))) {
+		info.err = -EFAULT;
+		goto out;
 	}
+#ifdef CONFIG_KSU_SUSFS_ENABLE_LOG
+	susfs_set_log(info.enabled);
 #endif
+	info.err = 0;
+out:
+	copy_to_user(&((struct st_susfs_log __user *)*arg)->err, &info.err, sizeof(info.err));
 }
 
 static inline void susfs_set_hide_sus_mnts_for_non_su_procs(void __user **arg) {
+	struct st_susfs_hide_sus_mnts_for_non_su_procs info = {0};
+	if (!arg || !*arg) return;
+	if (copy_from_user(&info, (struct st_susfs_hide_sus_mnts_for_non_su_procs __user *)*arg, sizeof(info))) {
+		info.err = -EFAULT;
+		goto out;
+	}
+	info.err = 0;
+out:
+	copy_to_user(&((struct st_susfs_hide_sus_mnts_for_non_su_procs __user *)*arg)->err, &info.err, sizeof(info.err));
 }
 
 static inline void susfs_start_sdcard_monitor_fn(void) {
 }
 
 static inline void susfs_add_sus_map(void __user **arg) {
+	struct st_susfs_sus_map info = {0};
+	if (!arg || !*arg) return;
+	if (copy_from_user(&info, (struct st_susfs_sus_map __user *)*arg, sizeof(info))) {
+		info.err = -EFAULT;
+		goto out;
+	}
+	info.err = 0;
+out:
+	copy_to_user(&((struct st_susfs_sus_map __user *)*arg)->err, &info.err, sizeof(info.err));
 }
 
 static inline int susfs_add_sus_memfd(void __user **arg) {
