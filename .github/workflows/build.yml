@@ -90,9 +90,9 @@ jobs:
           export KBUILD_BUILD_HOST="build-host"
 
           if [ "$TARGET_NUM" = "8" ]; then
-            printf "%s\n3\n2\ny\nn\nn\ny\n" "$TARGET_NUM" | bash apollo.sh
+            printf "%s\n3\n2\ny\ny\nn\ny\n" "$TARGET_NUM" | bash apollo.sh
           else
-            printf "%s\n3\n2\ny\nn\nn\n" "$TARGET_NUM" | bash apollo.sh
+            printf "%s\n3\n2\ny\ny\nn\n" "$TARGET_NUM" | bash apollo.sh
           fi
 
           if ! ls Apollo/Product/*.img 1> /dev/null 2>&1 && ! ls Apollo/Out/*.img 1> /dev/null 2>&1; then
