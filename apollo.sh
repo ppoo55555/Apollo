@@ -433,6 +433,8 @@ BUILD_GENERATE_CONFIG()
       echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=n" >> $CR_DEFCONFIG/tmp_defconfig
       echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> $CR_DEFCONFIG/tmp_defconfig
       echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SUS_MAP=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SUS_MEMFD=n" >> $CR_DEFCONFIG/tmp_defconfig
       CR_IMAGE_NAME=$CR_IMAGE_NAME-susfs
       zver=$zver-SuSFS
     else
@@ -452,6 +454,8 @@ BUILD_GENERATE_CONFIG()
       echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=n" >> $CR_DEFCONFIG/tmp_defconfig
       echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=n" >> $CR_DEFCONFIG/tmp_defconfig
       echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SUS_MAP=n" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SUS_MEMFD=n" >> $CR_DEFCONFIG/tmp_defconfig
     fi
   else
     echo "# CONFIG_KSU is not set" >> $CR_DEFCONFIG/tmp_defconfig

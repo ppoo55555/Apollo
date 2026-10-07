@@ -256,6 +256,13 @@ static inline void susfs_set_hide_sus_mnts_for_non_su_procs(void __user **arg) {
 static inline void susfs_start_sdcard_monitor_fn(void) {
 }
 
+static inline void susfs_add_sus_map(void __user **arg) {
+}
+
+static inline int susfs_add_sus_memfd(void __user **arg) {
+	return 0;
+}
+
 /* susfs_init */
 void susfs_init(void);
 
