@@ -65,6 +65,15 @@ jobs:
           curl -sL https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/llvm-r522817/clang-r522817.tar.gz | tar -xz -C toolchain/clang-r522817
           touch buildtools
 
+      - name: Setup WireGuard Sources
+        run: |
+          mkdir -p net/wireguard
+          git clone --depth 1 https://github.com/WireGuard/wireguard-linux-compat.git /tmp/wg_tmp
+          cp -r /tmp/wg_tmp/src/* net/wireguard/
+          rm -rf /tmp/wg_tmp
+          sed -i 's/tristate/bool/;s/default m/default y/;' net/wireguard/Kconfig
+          touch net/wireguard/.check
+
       - name: Compile Apollo Kernel
         run: |
           find . -name "*.sh" -exec sed -i 's/\r$//' {} +
