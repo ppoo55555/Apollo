@@ -154,6 +154,8 @@ int susfs_add_sus_path_kernel(struct st_susfs_sus_path* __user user_info) {
 		goto out_path_put_path;
 	}
 	inode = d_inode(path.dentry);
+	info.target_ino = inode->i_ino;
+	info.i_uid = inode->i_uid.val;
 
 	tmp_buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
 	if (!tmp_buf) {
@@ -280,6 +282,8 @@ int susfs_add_sus_path_loop_kernel(struct st_susfs_sus_path* __user user_info) {
 		goto out_path_put_path;
 	}
 	inode = d_inode(path.dentry);
+	info.target_ino = inode->i_ino;
+	info.i_uid = inode->i_uid.val;
 
 	tmp_buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
 	if (!tmp_buf) {

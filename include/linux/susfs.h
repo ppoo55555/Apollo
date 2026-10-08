@@ -29,8 +29,9 @@
 /* sus_path */
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 struct st_susfs_sus_path {
-	unsigned long                    target_ino;
 	char                             target_pathname[SUSFS_MAX_LEN_PATHNAME];
+	int                              err;
+	unsigned long                    target_ino;
 	unsigned int                     i_uid;
 };
 
@@ -193,10 +194,18 @@ int susfs_set_i_state_on_external_dir(char __user* user_info, int cmd);
 int susfs_add_sus_path_kernel(struct st_susfs_sus_path* __user user_info);
 int susfs_add_sus_path_loop_kernel(struct st_susfs_sus_path* __user user_info);
 static inline void susfs_add_sus_path(void __user **arg) {
-	if (arg && *arg) susfs_add_sus_path_kernel((struct st_susfs_sus_path __user *)*arg);
+	int err = 0;
+	if (arg && *arg) {
+		err = susfs_add_sus_path_kernel((struct st_susfs_sus_path __user *)*arg);
+		copy_to_user(&((struct st_susfs_sus_path __user *)*arg)->err, &err, sizeof(err));
+	}
 }
 static inline void susfs_add_sus_path_loop(void __user **arg) {
-	if (arg && *arg) susfs_add_sus_path_loop_kernel((struct st_susfs_sus_path __user *)*arg);
+	int err = 0;
+	if (arg && *arg) {
+		err = susfs_add_sus_path_loop_kernel((struct st_susfs_sus_path __user *)*arg);
+		copy_to_user(&((struct st_susfs_sus_path __user *)*arg)->err, &err, sizeof(err));
+	}
 }
 #endif
 /* sus_mount */
