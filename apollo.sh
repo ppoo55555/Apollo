@@ -419,7 +419,7 @@ BUILD_GENERATE_CONFIG()
       echo " Adding KernelSU-Next-SuSFS"
       echo "CONFIG_KSU_SUSFS=y" >> $CR_DEFCONFIG/tmp_defconfig
       echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
-      echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> $CR_DEFCONFIG/tmp_defconfig
+      echo "CONFIG_KSU_SUSFS_SUS_PATH=n" >> $CR_DEFCONFIG/tmp_defconfig
       echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
       echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
       echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> $CR_DEFCONFIG/tmp_defconfig
