@@ -38,6 +38,7 @@
 #include <linux/file.h>
 #include <linux/mount.h>
 #include <linux/gfp.h>
+#include <linux/spoof.h>
 #include <linux/syscore_ops.h>
 #include <linux/version.h>
 #include <linux/ctype.h>
@@ -1357,6 +1358,8 @@ SYSCALL_DEFINE1(newuname, struct new_utsname __user *, name)
 	} else if (!strncmp(current->comm, "system_server", 13) ||
 	           !strncmp(current->comm, "vintf", 5)) {
 		strcpy(tmp.release, "4.9.118-Apollo-V7.0-G960N-20261006-rel");
+	} else if (get_spoof_kernel_release()[0] != '\0') {
+		strlcpy(tmp.release, get_spoof_kernel_release(), sizeof(tmp.release));
 	}
 #ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME
 	susfs_spoof_uname(&tmp);

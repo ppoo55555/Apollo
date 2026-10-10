@@ -103,29 +103,35 @@ static int process_flag(int replace, const char *flag, const char *new_var)
 }
 #endif
 
-static int __init proc_cmdline_init(void)
+#include <linux/spoof.h>
+
+void update_spoof_cmdline(void)
 {
+#ifdef CONFIG_PROC_SPOOF_CMDLINE
 	memcpy(new_command_line, saved_command_line,
 		min((size_t)COMMAND_LINE_SIZE, strlen(saved_command_line)));
 
-#ifdef CONFIG_PROC_SPOOF_CMDLINE
-	/*
-	 * Remove various flags from command line seen by userspace in order to
-	 * pass SafetyNet CTS check.
-	 */
-	process_flag(FLAG_REPLACE, "androidboot.verifiedbootstate=", "green"); // Play Integrity API / SafetyNet
-	process_flag(FLAG_REPLACE, "androidboot.warranty_bit=", "0"); // Bootloader status and Knox
-	process_flag(FLAG_REPLACE, "androidboot.fmp_config=", "1"); // Samsung Knox FMP / FIPS
-	process_flag(FLAG_REPLACE, "androidboot.bootloader=", "15081906");
-	process_flag(FLAG_REPLACE, "androidboot.hardware=", "powervr");
-	process_flag(FLAG_REPLACE, "androidboot.baseband=", "15081906");
+	process_flag(FLAG_REPLACE, "androidboot.verifiedbootstate=", "green");
+	process_flag(FLAG_REPLACE, "androidboot.warranty_bit=", "0");
+	process_flag(FLAG_REPLACE, "androidboot.fmp_config=", "1");
+	process_flag(FLAG_REPLACE, "androidboot.bootloader=", get_spoof_bootloader());
+	process_flag(FLAG_REPLACE, "androidboot.hardware=", get_spoof_hardware());
+	process_flag(FLAG_REPLACE, "androidboot.baseband=", get_spoof_baseband());
+
 	if (!strnstr(new_command_line, "androidboot.baseband=", COMMAND_LINE_SIZE)) {
 		size_t clen = strlen(new_command_line);
-		if (clen + strlen(" androidboot.baseband=15081906") < COMMAND_LINE_SIZE)
-			strcat(new_command_line, " androidboot.baseband=15081906");
+		char baseband_flag[128];
+		snprintf(baseband_flag, sizeof(baseband_flag), " androidboot.baseband=%s", get_spoof_baseband());
+		if (clen + strlen(baseband_flag) < COMMAND_LINE_SIZE)
+			strcat(new_command_line, baseband_flag);
 	}
 #endif
+}
+EXPORT_SYMBOL(update_spoof_cmdline);
 
+static int __init proc_cmdline_init(void)
+{
+	update_spoof_cmdline();
 	proc_create("cmdline", 0, NULL, &cmdline_proc_fops);
 	return 0;
 }

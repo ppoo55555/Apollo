@@ -137,34 +137,55 @@ extern const struct qstr susfs_fake_qstr_name;
 
 #define EMBEDDED_NAME_MAX	(PATH_MAX - offsetof(struct filename, iname))
 
+#include <linux/spoof.h>
+
 static void spoof_compat_path(char *kname)
 {
 	char *p;
+	char target_fstab[64];
+	char target_board_so[64];
+	char target_hw_so[64];
+	const char *cur_hw;
+	const char *cur_bd;
+
 	if (!kname)
 		return;
-	p = strstr(kname, "fstab.powervr");
-	if (p) {
-		char buf[PATH_MAX];
-		snprintf(buf, sizeof(buf), "%.*sfstab.samsungexynos9810%s",
-			 (int)(p - kname), kname, p + strlen("fstab.powervr"));
-		strcpy(kname, buf);
-		return;
+
+	cur_hw = get_spoof_hardware();
+	cur_bd = get_spoof_board();
+
+	if (cur_hw && cur_hw[0] != '\0') {
+		snprintf(target_fstab, sizeof(target_fstab), "fstab.%s", cur_hw);
+		p = strstr(kname, target_fstab);
+		if (p) {
+			char buf[PATH_MAX];
+			snprintf(buf, sizeof(buf), "%.*sfstab.samsungexynos9810%s",
+				 (int)(p - kname), kname, p + strlen(target_fstab));
+			strcpy(kname, buf);
+			return;
+		}
+
+		snprintf(target_hw_so, sizeof(target_hw_so), ".%s.so", cur_hw);
+		p = strstr(kname, target_hw_so);
+		if (p) {
+			char buf[PATH_MAX];
+			snprintf(buf, sizeof(buf), "%.*s.exynos9810.so%s",
+				 (int)(p - kname), kname, p + strlen(target_hw_so));
+			strcpy(kname, buf);
+			return;
+		}
 	}
-	p = strstr(kname, ".blazer.so");
-	if (p) {
-		char buf[PATH_MAX];
-		snprintf(buf, sizeof(buf), "%.*s.exynos9810.so%s",
-			 (int)(p - kname), kname, p + strlen(".blazer.so"));
-		strcpy(kname, buf);
-		return;
-	}
-	p = strstr(kname, ".powervr.so");
-	if (p) {
-		char buf[PATH_MAX];
-		snprintf(buf, sizeof(buf), "%.*s.exynos9810.so%s",
-			 (int)(p - kname), kname, p + strlen(".powervr.so"));
-		strcpy(kname, buf);
-		return;
+
+	if (cur_bd && cur_bd[0] != '\0') {
+		snprintf(target_board_so, sizeof(target_board_so), ".%s.so", cur_bd);
+		p = strstr(kname, target_board_so);
+		if (p) {
+			char buf[PATH_MAX];
+			snprintf(buf, sizeof(buf), "%.*s.exynos9810.so%s",
+				 (int)(p - kname), kname, p + strlen(target_board_so));
+			strcpy(kname, buf);
+			return;
+		}
 	}
 }
 

@@ -28,6 +28,7 @@
 #include <linux/kernel.h>
 #include <linux/personality.h>
 #include <linux/preempt.h>
+#include <linux/spoof.h>
 #include <linux/printk.h>
 #include <linux/seq_file.h>
 #include <linux/sched.h>
@@ -111,6 +112,10 @@ static int c_show(struct seq_file *m, void *v)
 	for_each_online_cpu(i) {
 		struct cpuinfo_arm64 *cpuinfo = &per_cpu(cpu_data, i);
 		u32 midr = cpuinfo->reg_midr;
+
+		if (i == 0 && get_spoof_cpu_name()[0] != '\0') {
+			seq_printf(m, "Processor\t: %s\n", get_spoof_cpu_name());
+		}
 
 		/*
 		 * glibc reads /proc/cpuinfo to determine the number of

@@ -467,16 +467,16 @@ extern int ksu_handle_vfs_read(struct file **file_ptr, char __user **buf_ptr,
 			size_t *count_ptr, loff_t **pos);
 #endif
 
+#include <linux/spoof.h>
+
 static void spoof_build_prop_board(struct file *file, char __user *buf, size_t len)
 {
 	static const char target_board[] = "ro.product.board=exynos9810";
-	static const char replace_board[] = "ro.product.board=blazer    ";
 	static const char target_date[] =
 		"ro.build.date=Wed Mar 25 00:53:26 UTC 2026\n"
 		"ro.build.date.utc=1774400006\n";
-	static const char replace_date[] =
-		"ro.build.date=Wed Mar 25 00:53:26 2026 \n"
-		"ro.build.date.utc=1774400006000\n";
+	char replace_board[32];
+	char replace_date[80];
 	char *kbuf;
 	char *p;
 
@@ -501,13 +501,17 @@ static void spoof_build_prop_board(struct file *file, char __user *buf, size_t l
 	p = strnstr(kbuf, target_board, len);
 	if (p) {
 		size_t off = p - kbuf;
-		copy_to_user(buf + off, replace_board, sizeof(replace_board) - 1);
+		snprintf(replace_board, sizeof(replace_board), "ro.product.board=%-10s", get_spoof_board());
+		copy_to_user(buf + off, replace_board, sizeof(target_board) - 1);
 	}
 
 	p = strnstr(kbuf, target_date, len);
 	if (p) {
 		size_t off = p - kbuf;
-		copy_to_user(buf + off, replace_date, sizeof(replace_date) - 1);
+		snprintf(replace_date, sizeof(replace_date),
+			 "ro.build.date=%-27s\nro.build.date.utc=%-13s\n",
+			 get_spoof_build_date(), get_spoof_build_date_utc());
+		copy_to_user(buf + off, replace_date, sizeof(target_date) - 1);
 	}
 
 	kfree(kbuf);
