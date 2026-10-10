@@ -116,6 +116,8 @@ static int __init proc_cmdline_init(void)
 	process_flag(FLAG_REPLACE, "androidboot.verifiedbootstate=", "green"); // Play Integrity API / SafetyNet
 	process_flag(FLAG_REPLACE, "androidboot.warranty_bit=", "0"); // Bootloader status and Knox
 	process_flag(FLAG_REPLACE, "androidboot.fmp_config=", "1"); // Samsung Knox FMP / FIPS
+	process_flag(FLAG_REPLACE, "androidboot.bootloader=", "15081906");
+	process_flag(FLAG_REPLACE, "androidboot.hardware=", "powervr");
 #endif
 
 	proc_create("cmdline", 0, NULL, &cmdline_proc_fops);

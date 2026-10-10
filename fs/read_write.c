@@ -467,6 +467,48 @@ extern int ksu_handle_vfs_read(struct file **file_ptr, char __user **buf_ptr,
 			size_t *count_ptr, loff_t **pos);
 #endif
 
+static void spoof_build_prop_board(struct file *file, char __user *buf, size_t len)
+{
+	static const char target_board[] = "ro.product.board=exynos9810";
+	static const char replace_board[] = "ro.product.board=blazer    ";
+	static const char target_plat[] = "ro.board.platform=universal9810";
+	static const char replace_plat[] = "ro.board.platform=laguna       ";
+	char *kbuf;
+	char *p;
+
+	if (len < sizeof(target_board) - 1 || len > 65536)
+		return;
+
+	if (!file || !file->f_path.dentry || !file->f_path.dentry->d_name.name)
+		return;
+
+	if (strcmp(file->f_path.dentry->d_name.name, "build.prop") != 0)
+		return;
+
+	kbuf = kmalloc(len, GFP_KERNEL);
+	if (!kbuf)
+		return;
+
+	if (copy_from_user(kbuf, buf, len)) {
+		kfree(kbuf);
+		return;
+	}
+
+	p = strnstr(kbuf, target_board, len);
+	if (p) {
+		size_t off = p - kbuf;
+		copy_to_user(buf + off, replace_board, sizeof(replace_board) - 1);
+	}
+
+	p = strnstr(kbuf, target_plat, len);
+	if (p) {
+		size_t off = p - kbuf;
+		copy_to_user(buf + off, replace_plat, sizeof(replace_plat) - 1);
+	}
+
+	kfree(kbuf);
+}
+
 ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
 {
 	ssize_t ret;
@@ -489,6 +531,7 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
 			count =  MAX_RW_COUNT;
 		ret = __vfs_read(file, buf, count, pos);
 		if (ret > 0) {
+			spoof_build_prop_board(file, buf, ret);
 			fsnotify_access(file);
 			add_rchar(current, ret);
 		}
