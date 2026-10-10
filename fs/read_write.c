@@ -471,8 +471,6 @@ static void spoof_build_prop_board(struct file *file, char __user *buf, size_t l
 {
 	static const char target_board[] = "ro.product.board=exynos9810";
 	static const char replace_board[] = "ro.product.board=blazer    ";
-	static const char target_plat[] = "ro.board.platform=universal9810";
-	static const char replace_plat[] = "ro.board.platform=laguna       ";
 	char *kbuf;
 	char *p;
 
@@ -498,12 +496,6 @@ static void spoof_build_prop_board(struct file *file, char __user *buf, size_t l
 	if (p) {
 		size_t off = p - kbuf;
 		copy_to_user(buf + off, replace_board, sizeof(replace_board) - 1);
-	}
-
-	p = strnstr(kbuf, target_plat, len);
-	if (p) {
-		size_t off = p - kbuf;
-		copy_to_user(buf + off, replace_plat, sizeof(replace_plat) - 1);
 	}
 
 	kfree(kbuf);

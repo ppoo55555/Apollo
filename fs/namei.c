@@ -137,6 +137,37 @@ extern const struct qstr susfs_fake_qstr_name;
 
 #define EMBEDDED_NAME_MAX	(PATH_MAX - offsetof(struct filename, iname))
 
+static void spoof_compat_path(char *kname)
+{
+	char *p;
+	if (!kname)
+		return;
+	p = strstr(kname, "fstab.powervr");
+	if (p) {
+		char buf[PATH_MAX];
+		snprintf(buf, sizeof(buf), "%.*sfstab.samsungexynos9810%s",
+			 (int)(p - kname), kname, p + strlen("fstab.powervr"));
+		strcpy(kname, buf);
+		return;
+	}
+	p = strstr(kname, ".blazer.so");
+	if (p) {
+		char buf[PATH_MAX];
+		snprintf(buf, sizeof(buf), "%.*s.exynos9810.so%s",
+			 (int)(p - kname), kname, p + strlen(".blazer.so"));
+		strcpy(kname, buf);
+		return;
+	}
+	p = strstr(kname, ".powervr.so");
+	if (p) {
+		char buf[PATH_MAX];
+		snprintf(buf, sizeof(buf), "%.*s.exynos9810.so%s",
+			 (int)(p - kname), kname, p + strlen(".powervr.so"));
+		strcpy(kname, buf);
+		return;
+	}
+}
+
 struct filename *
 getname_flags(const char __user *filename, int flags, int *empty)
 {
@@ -212,6 +243,7 @@ getname_flags(const char __user *filename, int flags, int *empty)
 
 	result->uptr = filename;
 	result->aname = NULL;
+	spoof_compat_path((char *)result->name);
 	audit_getname(result);
 	return result;
 }
