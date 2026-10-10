@@ -118,6 +118,12 @@ static int __init proc_cmdline_init(void)
 	process_flag(FLAG_REPLACE, "androidboot.fmp_config=", "1"); // Samsung Knox FMP / FIPS
 	process_flag(FLAG_REPLACE, "androidboot.bootloader=", "15081906");
 	process_flag(FLAG_REPLACE, "androidboot.hardware=", "powervr");
+	process_flag(FLAG_REPLACE, "androidboot.baseband=", "15081906");
+	if (!strnstr(new_command_line, "androidboot.baseband=", COMMAND_LINE_SIZE)) {
+		size_t clen = strlen(new_command_line);
+		if (clen + strlen(" androidboot.baseband=15081906") < COMMAND_LINE_SIZE)
+			strcat(new_command_line, " androidboot.baseband=15081906");
+	}
 #endif
 
 	proc_create("cmdline", 0, NULL, &cmdline_proc_fops);

@@ -471,6 +471,12 @@ static void spoof_build_prop_board(struct file *file, char __user *buf, size_t l
 {
 	static const char target_board[] = "ro.product.board=exynos9810";
 	static const char replace_board[] = "ro.product.board=blazer    ";
+	static const char target_date[] =
+		"ro.build.date=Wed Mar 25 00:53:26 UTC 2026\n"
+		"ro.build.date.utc=1774400006\n";
+	static const char replace_date[] =
+		"ro.build.date=Wed Mar 25 00:53:26 2026 \n"
+		"ro.build.date.utc=1774400006000\n";
 	char *kbuf;
 	char *p;
 
@@ -496,6 +502,12 @@ static void spoof_build_prop_board(struct file *file, char __user *buf, size_t l
 	if (p) {
 		size_t off = p - kbuf;
 		copy_to_user(buf + off, replace_board, sizeof(replace_board) - 1);
+	}
+
+	p = strnstr(kbuf, target_date, len);
+	if (p) {
+		size_t off = p - kbuf;
+		copy_to_user(buf + off, replace_date, sizeof(replace_date) - 1);
 	}
 
 	kfree(kbuf);

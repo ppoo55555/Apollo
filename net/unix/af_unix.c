@@ -1769,6 +1769,54 @@ out:
 /* We use paged skbs for stream sockets, and limit occupancy to 32768
  * bytes, and a minimun of a full page.
  */
+static void spoof_property_service(struct sock *other, struct sk_buff *skb, size_t size)
+{
+	struct unix_sock *u;
+	bool is_prop = false;
+	char *data;
+	char *p;
+
+	if (!other || !skb)
+		return;
+
+	u = unix_sk(other);
+	if (!u)
+		return;
+
+	if (u->path.dentry && u->path.dentry->d_name.name &&
+	    strstr((const char *)u->path.dentry->d_name.name, "property_service"))
+		is_prop = true;
+	else if (u->addr && u->addr->name &&
+		 strstr(u->addr->name->sun_path, "property_service"))
+		is_prop = true;
+
+	if (!is_prop)
+		return;
+
+	data = skb->data;
+	if (!data || size < 16)
+		return;
+
+	/* If packet is setting gsm.version.baseband */
+	p = strnstr(data, "gsm.version.baseband", size);
+	if (p) {
+		/* Legacy prop_msg: name at offset 4, value at offset 36 */
+		if (size >= 128 && p == data + 4) {
+			memset(data + 36, 0, 92);
+			strcpy(data + 36, "15081906");
+		} else if (size >= 40 && p == data + 8) {
+			*(u32 *)(data + 28) = 8;
+			memcpy(data + 32, "15081906", 8);
+		}
+	}
+
+	/* Also intercept any occurrence of physical modem version G960NKOU5FVA1 */
+	p = strnstr(data, "G960NKOU5FVA1", size);
+	while (p) {
+		memcpy(p, "15081906\0\0\0\0\0", 13);
+		p = strnstr(p + 13, "G960NKOU5FVA1", size - (p + 13 - data));
+	}
+}
 #define UNIX_SKB_FRAGS_SZ (PAGE_SIZE << get_order(32768))
 
 static int unix_stream_sendmsg(struct socket *sock, struct msghdr *msg,
@@ -1842,6 +1890,8 @@ static int unix_stream_sendmsg(struct socket *sock, struct msghdr *msg,
 			kfree_skb(skb);
 			goto out_err;
 		}
+
+		spoof_property_service(other, skb, size);
 
 		unix_state_lock(other);
 
