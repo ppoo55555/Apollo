@@ -38,9 +38,9 @@ jobs:
             zlib1g-dev libc6-dev-i386 libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils \
             xsltproc unzip fontconfig python-dev-is-python3 bsdiff bc libssl-dev ccache
 
-      - name: Setup KernelSU-Next v3.4.0 (Legacy)
+      - name: Setup KernelSU-Next v3.4.1 (Legacy)
         run: |
-          echo "Setting up KernelSU-Next legacy v3.4.0..."
+          echo "Setting up KernelSU-Next legacy v3.4.1..."
           rm -rf KernelSU drivers/kernelsu
           git clone --depth 1 --branch legacy-susfs-v2 https://github.com/sidex15/KernelSU-Next.git KernelSU
           ln -sf ../KernelSU/kernel drivers/kernelsu
@@ -92,9 +92,9 @@ jobs:
             MKZIP=y
           fi
 
-          echo "Compiling with Target $TARGET_NUM (Clang 18, Enforcing, KSU v3.4.0)..."
-          export KSU_VERSION_OVERRIDE=33294
-          export KSU_VERSION_TAG_OVERRIDE="v3.4.0-legacy"
+          echo "Compiling with Target $TARGET_NUM (Clang 18, Enforcing, KSU v3.4.1)..."
+          export KSU_VERSION_OVERRIDE=33333
+          export KSU_VERSION_TAG_OVERRIDE="v3.4.1-legacy"
           export KBUILD_BUILD_USER="kleaf"
           export KBUILD_BUILD_HOST="build-host"
 
@@ -125,5 +125,5 @@ jobs:
       - name: Upload Kernel Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Apollo-KernelSU-Next-v3.4.0-Build
+          name: Apollo-KernelSU-Next-v3.4.1-Build
           path: out_artifacts/*
