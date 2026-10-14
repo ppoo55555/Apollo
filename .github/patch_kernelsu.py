@@ -62,7 +62,7 @@ if old_init in kc:
 else:
     print('WARNING: old_init not found in ksud_integration.c')
 
-# 5. Upgrade UAPI version to 5 for KernelSU-Next v3.4.1
+# 5. Upgrade UAPI version to 5 and sync v3.4.2 definitions for KernelSU-Next v3.4.2
 supercall_h = 'KernelSU/uapi/supercall.h'
 if os.path.exists(supercall_h):
     with open(supercall_h, 'r', encoding='utf-8') as f:
@@ -76,8 +76,29 @@ if os.path.exists(supercall_h):
             'static const __u32 EVENT_MODULE_MOUNTED = 3;\nstatic const __u32 EVENT_SERVICES = 4;'
         )
         print('Added EVENT_SERVICES in supercall.h')
+    if 'KSU_FEATURE_FLAG_SUPPORTED' not in sc:
+        feature_flags = '''#define KSU_FEATURE_FLAG_SUPPORTED (1 << 0)
+#define KSU_FEATURE_FLAG_FORCED (1 << 1)
+
+'''
+        if 'struct ksu_set_feature_cmd {' in sc:
+            sc = sc.replace('struct ksu_set_feature_cmd {', feature_flags + 'struct ksu_set_feature_cmd {')
+            print('Added KSU_FEATURE_FLAG_* macros in supercall.h')
     with open(supercall_h, 'w', encoding='utf-8') as f:
         f.write(sc)
+
+feature_h = 'KernelSU/uapi/feature.h'
+if os.path.exists(feature_h):
+    with open(feature_h, 'r', encoding='utf-8') as f:
+        fc = f.read()
+    if 'KSU_FEATURE_SELINUX_HIDE = 4,' in fc and 'KSU_FEATURE_SHELL_SU_ADB_ONLY' not in fc:
+        fc = fc.replace(
+            'KSU_FEATURE_SELINUX_HIDE = 4,',
+            'KSU_FEATURE_SELINUX_HIDE = 4,\n    KSU_FEATURE_SHELL_SU_ADB_ONLY = 6,'
+        )
+        print('Added KSU_FEATURE_SHELL_SU_ADB_ONLY in feature.h')
+        with open(feature_h, 'w', encoding='utf-8') as f:
+            f.write(fc)
 
 # 6. Add EVENT_SERVICES handling in dispatch.c
 dispatch_c = 'KernelSU/kernel/supercall/dispatch.c'
