@@ -1286,7 +1286,7 @@ $(vmlinux-dirs): prepare scripts
 	$(Q)$(MAKE) $(build)=$@
 
 define filechk_kernel.release
-	echo "6.6.102-android16-8-g6eb5b2a8c46b-ab14739656-4k"
+	echo "6.12.69-android16-6-g5c5f2fea42dd-ab15835541-4k"
 endef
 
 # Store (new) KERNELRELEASE string in include/config/kernel.release
@@ -1405,7 +1405,7 @@ endif
 
 uts_len := 64
 define filechk_utsrelease.h
-	(echo \#define UTS_RELEASE \"6.6.102-android16-8-g6eb5b2a8c46b-ab14739656-4k\";)
+	(echo \#define UTS_RELEASE \"6.12.69-android16-6-g5c5f2fea42dd-ab15835541-4k\";)
 endef
 
 define filechk_version.h

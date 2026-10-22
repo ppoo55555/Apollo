@@ -18,7 +18,7 @@ struct spoof_config g_spoof_config = {
 	.bootloader = "15081906",
 	.build_date_utc = "1774400006000",
 	.build_date = "Wed Mar 25 00:53:26 2026 ",
-	.kernel_release = "6.6.102-android15-8-g6eb5b2a8c46b-ab14739656-4k",
+	.kernel_release = "6.12.69-android16-6-g5c5f2fea42dd-ab15835541-4k",
 	.cpu_name = "",
 };
 
