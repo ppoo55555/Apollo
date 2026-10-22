@@ -506,6 +506,7 @@ BUILD_ZIMAGE()
 	export KBUILD_BUILD_HOST="build-host"
 	export KBUILD_BUILD_VERSION="1"
 	export KBUILD_BUILD_TIMESTAMP="Fri Jul 10 21:44:24 UTC 2026"
+	export KBUILD_COMPILER_STRING="Android (14043575, +pgo, +bolt, +lto, +mlgo-based on r536225) clang 19.0.1, LLD"
 	export LOCALVERSION=""
 	echo "Make $CR_CONFIG"
 	$compile $CR_CONFIG
