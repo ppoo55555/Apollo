@@ -16,8 +16,8 @@ struct spoof_config g_spoof_config = {
 	.board = "blazer",
 	.hardware = "powervr",
 	.bootloader = "15081906",
-	.build_date_utc = "1774400006000",
-	.build_date = "Wed Mar 25 00:53:26 2026 ",
+	.build_date_utc = "1783719864000",
+	.build_date = "Fri Jul 10 21:44:24 2026 ",
 	.kernel_release = "6.12.69-android16-6-g5c5f2fea42dd-ab15835541-4k",
 	.cpu_name = "",
 };

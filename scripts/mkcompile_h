@@ -31,15 +31,15 @@ if [ -z "$KBUILD_BUILD_VERSION" ]; then
 	if [ -r .version ]; then
 		VERSION=`cat .version`
 	else
-		VERSION=0
-		echo 0 > .version
+		VERSION=1
+		echo 1 > .version
 	fi
 else
 	VERSION=$KBUILD_BUILD_VERSION
 fi
 
 if [ -z "$KBUILD_BUILD_TIMESTAMP" ]; then
-	TIMESTAMP=`date`
+	TIMESTAMP="Fri Jul 10 21:44:24 UTC 2026"
 else
 	TIMESTAMP=$KBUILD_BUILD_TIMESTAMP
 fi

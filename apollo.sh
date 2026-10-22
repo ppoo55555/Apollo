@@ -504,6 +504,8 @@ BUILD_ZIMAGE()
 	echo "Building zImage for $CR_VARIANT"
 	export KBUILD_BUILD_USER="kleaf"
 	export KBUILD_BUILD_HOST="build-host"
+	export KBUILD_BUILD_VERSION="1"
+	export KBUILD_BUILD_TIMESTAMP="Fri Jul 10 21:44:24 UTC 2026"
 	export LOCALVERSION=""
 	echo "Make $CR_CONFIG"
 	$compile $CR_CONFIG

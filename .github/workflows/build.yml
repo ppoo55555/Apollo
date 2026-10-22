@@ -97,6 +97,8 @@ jobs:
           export KSU_VERSION_TAG_OVERRIDE="v3.4.2-legacy"
           export KBUILD_BUILD_USER="kleaf"
           export KBUILD_BUILD_HOST="build-host"
+          export KBUILD_BUILD_VERSION="1"
+          export KBUILD_BUILD_TIMESTAMP="Fri Jul 10 21:44:24 UTC 2026"
 
           if [ "$TARGET_NUM" = "8" ]; then
             printf "%s\n3\n2\ny\ny\nn\ny\n" "$TARGET_NUM" | bash apollo.sh
